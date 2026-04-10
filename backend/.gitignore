@@ -1,0 +1,116 @@
+############################
+# ENV / SECRETS
+############################
+.env
+.env.*
+*.env
+secrets.*
+config/local.*
+config/*.local.*
+
+############################
+# DEPENDENCIES
+############################
+node_modules/
+vendor/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+pip-wheel-metadata/
+
+############################
+# BUILD / DIST
+############################
+dist/
+build/
+target/
+out/
+coverage/
+*.log
+
+############################
+# LOG FILES
+############################
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+############################
+# DATABASE
+############################
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.sql
+
+############################
+# DOCKER
+############################
+docker-compose.override.yml
+.docker/
+
+############################
+# CACHE / TEMP
+############################
+.cache/
+.tmp/
+temp/
+tmp/
+
+############################
+# IDE / EDITOR
+############################
+.vscode/
+.idea/
+*.swp
+*.swo
+*.iml
+*.ipr
+*.iws
+
+############################
+# OS FILES
+############################
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+############################
+# TEST / REPORTS
+############################
+coverage/
+*.lcov
+test-results/
+
+############################
+# FRAMEWORK SPECIFIC
+############################
+# Node / Nest / Express
+.npm/
+.pnpm-store/
+
+# Python / Django / Flask
+staticfiles/
+media/
+
+# Java / Spring
+*.class
+
+# PHP / Laravel
+/public/storage
+/storage/*.key
+
+############################
+# MISC
+############################
+*.bak
+*.old
+*.orig

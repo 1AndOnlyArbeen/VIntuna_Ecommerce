@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Build output
+dist/
+build/
+out/
+coverage/
+target/
+
+# Environment / secrets
+.env
+.env.*
+*.env
+
+# Logs
+logs/
+*.log
+
+# Cache / temp
+.cache/
+.tmp/
+temp/
+tmp/
+
+# Framework generated
+.next/
+.nuxt/
+.svelte-kit/
+public/build/
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Lock files (optional – remove if you want them formatted)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+composer.lock
+
+# Minified / generated
+*.min.js
+*.min.css

@@ -1,0 +1,20 @@
+for reference only : 
+
+
+FRONTEND_URL=http://localhost:5000
+
+RESEND_API=re_Zvj5BMys_45ei7Sx2UXHww2EesBLkHpnu
+
+GENERATE_ACCESSTOKEN_KEY= ahdsai hbdjkabsgdjhasbgdjhbagsd
+GENERATE_REFRESHTOKEN_KEY=jahgfdikabgdkjcahgdkjahngsugdaxjkhag
+
+
+//cloudinary details
+CLOUDINARY_CLOUD_NAME=dsf17ygga
+CLOUDINARY_API_KEY=591837283242942
+CLOUDINARY_API_SECRET=uCyfxi5gRQ_LDUo9vKOZskmPBgI
+
+
+
+
+MONGO_DB_URL=mongodb+srv://vintunaStore:arbin123@vintunastore.3bogeee.mongodb.net/?appName=vintunaStore
