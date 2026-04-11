@@ -12,6 +12,16 @@ export const categories = [
   { id: 6, name: "Fruits & Vegetables", icon: "🥬", image: "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=300&h=300&fit=crop" },
   { id: 7, name: "Rice & Grains", icon: "🌾", image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300&h=300&fit=crop" },
   { id: 8, name: "Pickles & Chutneys", icon: "🫙", image: "https://images.unsplash.com/photo-1590779033100-9f60a05a013d?w=300&h=300&fit=crop" },
+  { id: 9, name: "Meat & Poultry", icon: "🍖", image: "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=300&h=300&fit=crop" },
+  { id: 10, name: "Frozen Foods", icon: "🧊", image: "https://images.unsplash.com/photo-1621939514649-280e2ee25f60?w=300&h=300&fit=crop" },
+  { id: 11, name: "Noodles & Pasta", icon: "🍜", image: "https://images.unsplash.com/photo-1612929633738-8fe44f7ec841?w=300&h=300&fit=crop" },
+  { id: 12, name: "Tea & Coffee", icon: "☕", image: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=300&h=300&fit=crop" },
+  { id: 13, name: "Oil & Ghee", icon: "🫒", image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=300&h=300&fit=crop" },
+  { id: 14, name: "Baking & Cooking", icon: "🧁", image: "https://images.unsplash.com/photo-1486427944544-d2c246c4df14?w=300&h=300&fit=crop" },
+  { id: 15, name: "Baby & Kids", icon: "🍼", image: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=300&h=300&fit=crop" },
+  { id: 16, name: "Personal Care", icon: "🧴", image: "https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=300&h=300&fit=crop" },
+  { id: 17, name: "Cleaning & Home", icon: "🧹", image: "https://images.unsplash.com/photo-1585421514738-01798e348b17?w=300&h=300&fit=crop" },
+  { id: 18, name: "Dry Fruits & Nuts", icon: "🥜", image: "https://images.unsplash.com/photo-1599599810694-b5b37304c041?w=300&h=300&fit=crop" },
 ];
 
 export const products = [

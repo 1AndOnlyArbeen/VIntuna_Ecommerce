@@ -28,8 +28,6 @@ import AdminProducts from "./components/Admin/AdminProducts"
 import AdminBanners from "./components/Admin/AdminBanners"
 import AdminFeatured from "./components/Admin/AdminFeatured"
 import AdminCategories from "./components/Admin/AdminCategories"
-import AdminAddProduct from "./components/Admin/AdminAddProduct"
-import AdminAddCategory from "./components/Admin/AdminAddCategory"
 import AdminDiscounts from "./components/Admin/AdminDiscounts"
 import AdminProfile from "./components/Admin/AdminProfile"
 
@@ -60,11 +58,9 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <AdminDashboard /> },
       { path: "products", element: <AdminProducts /> },
-      { path: "products/add", element: <AdminAddProduct /> },
       { path: "banners", element: <AdminBanners /> },
       { path: "featured", element: <AdminFeatured /> },
       { path: "categories", element: <AdminCategories /> },
-      { path: "categories/add", element: <AdminAddCategory /> },
       { path: "discounts", element: <AdminDiscounts /> },
       { path: "profile", element: <AdminProfile /> },
     ],

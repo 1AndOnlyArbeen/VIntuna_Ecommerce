@@ -1,16 +1,28 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { Link } from "react-router-dom"
 import { getProductsAPI, getCategoriesAPI } from "../../api"
 import { categories as mockCategories, products as mockProducts } from "../../data/products"
 import ProductCard from "../ProductCard/ProductCard"
 import { useScrollRevealAll } from "../../hooks/useScrollReveal"
 
-const PER_PAGE = 8
+const PER_PAGE = 50
 
-const BANNER_CONTENT = {
-  top: { text: "Free Delivery on orders above Rs.200", sub: "No hidden charges. What you see is what you pay." },
-  bottom: { text: "Fresh deals every day — order now!", sub: "Quality groceries at honest prices, delivered to your door." },
-}
+const BANNERS = [
+  { id: 1, title: "Mega Sale — Up to 50% Off", subtitle: "Grab the biggest discounts of the season!", image: "https://placehold.co/1200x420/F97316/FFFFFF?font=roboto&text=.", buttonText: "Shop Now", link: "/search?q=Snacks" },
+  { id: 2, title: "Free Delivery Above Rs.200", subtitle: "No hidden charges. What you see is what you pay.", image: "https://placehold.co/1200x420/16A34A/FFFFFF?font=roboto&text=.", buttonText: "Order Now", link: "/search?q=Nepali" },
+  { id: 3, title: "Pay via eSewa, Khalti & More", subtitle: "Multiple payment options. Fast & secure checkout.", image: "https://placehold.co/1200x420/7C3AED/FFFFFF?font=roboto&text=.", buttonText: "Explore", link: "/" },
+  { id: 4, title: "Flash Deals Every Day", subtitle: "Limited time offers on your favorite products.", image: "https://placehold.co/1200x420/DC2626/FFFFFF?font=roboto&text=.", buttonText: "Grab Deals", link: "/search?q=Drinks" },
+  { id: 5, title: "Farm Fresh & Organic Picks", subtitle: "Handpicked organic produce from local farms.", image: "https://placehold.co/1200x420/0284C7/FFFFFF?font=roboto&text=.", buttonText: "Shop Fresh", link: "/search?q=Fruits" },
+]
+
+const SORT_OPTIONS = [
+  { value: "featured", label: "Featured" },
+  { value: "price-asc", label: "Price: Low to High" },
+  { value: "price-desc", label: "Price: High to Low" },
+  { value: "newest", label: "Newest Arrival" },
+]
+
+const TAG_OPTIONS = ["Best Seller", "Popular Now", "Healthy", "Organic", "New Arrival", "Limited"]
 
 export default function Home() {
   const [selectedCat, setSelectedCat] = useState("All")
@@ -18,7 +30,29 @@ export default function Home() {
   const [categories, setCategories] = useState(mockCategories)
   const [products, setProducts] = useState(mockProducts)
   const [loading, setLoading] = useState(true)
+  const [slide, setSlide] = useState(0)
+  const [sortBy, setSortBy] = useState("featured")
+  const [sidebarSearch, setSidebarSearch] = useState("")
+  const [priceRange, setPriceRange] = useState(10000)
+  const [selectedTag, setSelectedTag] = useState("")
+  const [showMobileFilters, setShowMobileFilters] = useState(false)
+  const timerRef = useRef(null)
   const containerRef = useScrollRevealAll()
+  const bannerCount = BANNERS.length
+
+  const nextSlide = useCallback(() => setSlide(s => (s + 1) % bannerCount), [bannerCount])
+  const prevSlide = useCallback(() => setSlide(s => (s - 1 + bannerCount) % bannerCount), [bannerCount])
+  const goToSlide = useCallback((i) => setSlide(i), [])
+
+  useEffect(() => {
+    timerRef.current = setInterval(nextSlide, 4000)
+    return () => clearInterval(timerRef.current)
+  }, [nextSlide])
+
+  function resetTimer() {
+    clearInterval(timerRef.current)
+    timerRef.current = setInterval(nextSlide, 4000)
+  }
 
   useEffect(() => {
     async function fetchData() {
@@ -26,178 +60,352 @@ export default function Home() {
         const [catRes, prodRes] = await Promise.all([getCategoriesAPI(), getProductsAPI()])
         if (catRes.data?.length) setCategories(catRes.data)
         if (prodRes.data?.length) setProducts(prodRes.data)
-      } catch {
-        // fallback to mock data
-      } finally {
-        setLoading(false)
-      }
+      } catch {}
+      finally { setLoading(false) }
     }
     fetchData()
   }, [])
 
-  const filtered = selectedCat === "All" ? products : products.filter(p => p.category === selectedCat)
+  // Compute category counts
+  const categoryCounts = useMemo(() => {
+    const counts = {}
+    products.forEach(p => {
+      counts[p.category] = (counts[p.category] || 0) + 1
+    })
+    return counts
+  }, [products])
+
+  // Filtered + sorted products
+  const filtered = useMemo(() => {
+    let result = selectedCat === "All" ? [...products] : products.filter(p => p.category === selectedCat)
+
+    if (sidebarSearch.trim()) {
+      const q = sidebarSearch.toLowerCase()
+      result = result.filter(p => p.name.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q))
+    }
+
+    result = result.filter(p => p.price <= priceRange)
+
+    if (selectedTag) {
+      result = result.filter(p => Array.isArray(p.tags) && p.tags.includes(selectedTag))
+    }
+
+    if (sortBy === "price-asc") result.sort((a, b) => a.price - b.price)
+    else if (sortBy === "price-desc") result.sort((a, b) => b.price - a.price)
+
+    return result
+  }, [products, selectedCat, sidebarSearch, priceRange, selectedTag, sortBy])
+
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
   const safePage = Math.min(page, totalPages)
   const visible = filtered.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE)
 
-  function pickCategory(cat) {
-    setSelectedCat(cat)
+  function pickCategory(cat) { setSelectedCat(cat); setPage(1) }
+
+  function clearFilters() {
+    setSelectedCat("All")
+    setSidebarSearch("")
+    setPriceRange(10000)
+    setSelectedTag("")
+    setSortBy("featured")
     setPage(1)
   }
 
-  function Banner({ data }) {
-    return (
-      <div className="relative bg-yellow-400/30 dark:bg-yellow-500/10 backdrop-blur-2xl rounded-2xl p-5 sm:p-7 overflow-hidden border border-yellow-300/30 dark:border-yellow-500/15 shadow-[0_6px_32px_rgba(250,204,21,0.12),0_2px_8px_rgba(250,204,21,0.06)] dark:shadow-[0_6px_32px_rgba(250,204,21,0.08)]">
-        <div className="absolute inset-0 opacity-[0.04]" style={{
-          backgroundImage: `radial-gradient(circle at 2px 2px, #ca8a04 1px, transparent 0)`,
-          backgroundSize: "20px 20px"
-        }} />
-        <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div>
-            <h3 className="text-base sm:text-xl font-bold text-yellow-900 dark:text-yellow-300 mb-0.5">{data.text}</h3>
-            <p className="text-yellow-800/70 dark:text-yellow-200/50 text-xs sm:text-sm">{data.sub}</p>
-          </div>
-          <Link
-            to="/"
-            className="shrink-0 bg-yellow-500 hover:bg-yellow-400 text-yellow-950 font-bold px-5 py-2 rounded-xl transition-all text-sm btn-press shadow-[0_3px_16px_rgba(250,204,21,0.3)] hover:shadow-[0_5px_24px_rgba(250,204,21,0.45)]"
-          >
-            Shop Now
-          </Link>
-        </div>
-      </div>
-    )
-  }
+  const maxPrice = useMemo(() => Math.max(...products.map(p => p.originalPrice || p.price), 1000), [products])
 
-  return (
-    <div ref={containerRef} className="min-h-screen bg-gray-50 dark:bg-gray-900">
-
-      {/* top banner */}
-      <div className="max-w-screen-xl mx-auto px-4 pt-5 sm:pt-6 animate-fade-in-down">
-        <Banner data={BANNER_CONTENT.top} />
+  // Sidebar content (shared between desktop and mobile)
+  const sidebarContent = (
+    <div className="bg-white/70 dark:bg-white/[0.04] backdrop-blur-2xl rounded-2xl border border-outline-variant/15 dark:border-white/[0.06] shadow-[0_4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.3)] p-5 space-y-7">
+      {/* Search within category */}
+      <div className="relative">
+        <input
+          className="w-full bg-[#e9e8e6]/50 dark:bg-white/[0.06] border border-outline-variant/20 rounded-xl py-2.5 px-3 pr-9 focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-sm font-label text-on-surface placeholder:text-on-surface/40"
+          placeholder="Search items..."
+          type="text"
+          value={sidebarSearch}
+          onChange={e => { setSidebarSearch(e.target.value); setPage(1) }}
+        />
+        <span className="material-symbols-outlined absolute right-2.5 top-2.5 text-on-surface/40 text-[18px]">search</span>
       </div>
 
-      {/* categories */}
-      <div className="max-w-screen-xl mx-auto px-4 pt-10 sm:pt-14 pb-6 sm:pb-8 reveal">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white">Shop by Category</h2>
-          <div className="h-0.5 flex-1 mx-4 bg-gradient-to-r from-green-200 to-transparent dark:from-green-900 rounded hidden sm:block" />
-        </div>
-        <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-3 scrollbar-hide">
-          <button
+      {/* Category filter */}
+      <section>
+        <h3 className="text-[11px] font-label font-bold uppercase tracking-widest text-on-surface/60 mb-3">Categories</h3>
+        <div className="bg-[#e5e4e2]/70 dark:bg-white/[0.06] rounded-xl p-1.5 space-y-0.5">
+          <div
             onClick={() => pickCategory("All")}
-            className={`flex flex-col items-center min-w-[70px] sm:min-w-[85px] p-2 sm:p-3 rounded-xl border-2 transition-all duration-300 shrink-0 cursor-pointer ${
-              selectedCat === "All"
-                ? "border-green-600 bg-green-50 dark:bg-green-900/50 shadow-md shadow-green-600/10 scale-105"
-                : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-green-400 hover:shadow-md hover:-translate-y-1 hover:scale-105"
-            }`}
+            className={`flex justify-between items-center cursor-pointer rounded-lg px-3 py-2.5 transition-all ${selectedCat === "All" ? "bg-white dark:bg-white/[0.1] shadow-[0_1px_6px_rgba(0,0,0,0.08)]" : "hover:bg-white/70 dark:hover:bg-white/[0.04]"}`}
           >
-            <span className="text-xl sm:text-2xl mb-1 transition-transform duration-300 group-hover:scale-110">🏪</span>
-            <span className="text-[10px] sm:text-xs font-semibold text-gray-700 dark:text-gray-300">All</span>
-          </button>
-          {categories.map((cat, i) => (
-            <button
+            <span className={`text-[13px] font-label ${selectedCat === "All" ? "text-on-surface font-bold" : "text-on-surface/70"}`}>All Products</span>
+            <span className="text-[10px] font-bold text-on-surface/50 bg-[#d5d4d2] dark:bg-white/[0.1] px-2 py-0.5 rounded-full min-w-[24px] text-center">{products.length}</span>
+          </div>
+          {categories.map(cat => (
+            <div
               key={cat._id || cat.id}
               onClick={() => pickCategory(cat.name)}
-              className={`flex flex-col items-center min-w-[70px] sm:min-w-[85px] p-2 rounded-xl border-2 transition-all duration-300 shrink-0 cursor-pointer ${
-                selectedCat === cat.name
-                  ? "border-green-600 bg-green-50 dark:bg-green-900/50 shadow-md shadow-green-600/10 scale-105"
-                  : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-green-400 hover:shadow-md hover:-translate-y-1 hover:scale-105"
-              }`}
-              style={{ animationDelay: `${i * 0.04}s` }}
+              className={`flex justify-between items-center cursor-pointer rounded-lg px-3 py-2.5 transition-all ${selectedCat === cat.name ? "bg-white dark:bg-white/[0.1] shadow-[0_1px_6px_rgba(0,0,0,0.08)]" : "hover:bg-white/70 dark:hover:bg-white/[0.04]"}`}
             >
-              {cat.image ? (
-                <img src={cat.image} alt={cat.name} className="w-10 h-10 sm:w-14 sm:h-14 object-contain mb-1 rounded-lg transition-transform duration-300 hover:scale-110" />
-              ) : (
-                <span className="text-xl sm:text-2xl mb-1 transition-transform duration-300 inline-block hover:scale-125 hover:rotate-6">{cat.icon}</span>
-              )}
-              <span className="text-[10px] sm:text-xs font-semibold text-gray-700 dark:text-gray-300 text-center leading-tight">{cat.name}</span>
+              <span className={`text-[13px] font-label ${selectedCat === cat.name ? "text-on-surface font-bold" : "text-on-surface/70"}`}>{cat.name}</span>
+              <span className="text-[10px] font-bold text-on-surface/50 bg-[#d5d4d2] dark:bg-white/[0.1] px-2 py-0.5 rounded-full min-w-[24px] text-center">{categoryCounts[cat.name] || 0}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Divider */}
+      <div className="h-px bg-outline-variant/25" />
+
+      {/* Tags filter */}
+      <section>
+        <h3 className="text-[11px] font-label font-bold uppercase tracking-widest text-on-surface/60 mb-3">Product Tags</h3>
+        <div className="bg-[#e5e4e2]/70 dark:bg-white/[0.06] rounded-xl p-1.5 flex flex-wrap gap-1.5">
+          {TAG_OPTIONS.map(tag => (
+            <button
+              key={tag}
+              onClick={() => { setSelectedTag(selectedTag === tag ? "" : tag); setPage(1) }}
+              className={`px-2.5 py-1.5 text-[11px] font-label rounded-lg transition-all cursor-pointer ${
+                selectedTag === tag
+                  ? "bg-white dark:bg-white/[0.1] text-on-surface font-bold shadow-[0_1px_4px_rgba(0,0,0,0.07)]"
+                  : "text-on-surface/60 hover:bg-white/70 dark:hover:bg-white/[0.04] hover:text-on-surface/80"
+              }`}
+            >
+              {tag}
             </button>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* products grid */}
-      <div className="max-w-screen-xl mx-auto px-4 pb-6">
-        <div className="flex items-center justify-between mb-4 reveal">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white">
-            {selectedCat === "All" ? "All Products" : selectedCat}
-          </h2>
-          <span className="text-xs sm:text-sm text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
-            {filtered.length} items
-          </span>
+      {/* Divider */}
+      <div className="h-px bg-outline-variant/25" />
+
+      {/* Price Range */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-[11px] font-label font-bold uppercase tracking-widest text-on-surface/60">Price Range</h3>
+          <span className="text-[12px] font-label font-bold text-on-surface">Rs.{priceRange}</span>
         </div>
+        <div className="bg-[#e5e4e2]/70 dark:bg-white/[0.06] rounded-xl p-3">
+          <input
+            className="w-full h-1.5 bg-[#d5d4d2] dark:bg-white/[0.1] appearance-none cursor-pointer accent-primary rounded-full"
+            type="range"
+            min="0"
+            max={maxPrice}
+            step="10"
+            value={priceRange}
+            onChange={e => { setPriceRange(Number(e.target.value)); setPage(1) }}
+          />
+          <div className="flex justify-between mt-2">
+            <span className="text-[10px] font-label text-on-surface/50">Rs.0</span>
+            <span className="text-[10px] font-label text-on-surface/50">Rs.{maxPrice}</span>
+          </div>
+        </div>
+      </section>
 
-        {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="bg-white dark:bg-gray-800 rounded-xl p-3 overflow-hidden">
-                <div className="h-32 sm:h-36 skeleton-shimmer rounded-lg mb-3" />
-                <div className="h-3 skeleton-shimmer rounded w-3/4 mb-2" />
-                <div className="h-3 skeleton-shimmer rounded w-1/2 mb-3" />
-                <div className="h-8 skeleton-shimmer rounded-lg" />
+      {/* Clear Filters */}
+      <button
+        onClick={clearFilters}
+        className="w-full py-2.5 rounded-xl bg-[#e5e4e2]/70 dark:bg-white/[0.06] text-on-surface/60 font-label font-bold text-[11px] uppercase tracking-widest hover:bg-primary hover:text-white transition-all duration-300 cursor-pointer"
+      >
+        Clear All Filters
+      </button>
+    </div>
+  )
+
+  return (
+    <div ref={containerRef} className="min-h-screen bg-surface">
+
+      {/* ===== BANNER SLIDER ===== */}
+      <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12 pt-4 sm:pt-6 animate-fade-in-down">
+        <div className="relative overflow-hidden rounded-xl sm:rounded-2xl group">
+          <div className="flex transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]" style={{ transform: `translateX(-${slide * 100}%)` }}>
+            {BANNERS.map(b => (
+              <div key={b.id} className="w-full shrink-0 relative">
+                <img src={b.image} alt="" className="w-full h-[200px] sm:h-[300px] md:h-[380px] lg:h-[440px] object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
+                <div className="absolute inset-0 flex items-center px-6 sm:px-10 md:px-14 lg:px-20">
+                  <div className="max-w-lg">
+                    <h2 className="text-white text-xl sm:text-3xl md:text-4xl lg:text-5xl font-headline font-extrabold leading-tight drop-shadow-lg mb-2 sm:mb-3 tracking-tight">{b.title}</h2>
+                    <p className="text-white/80 text-xs sm:text-sm md:text-base mb-4 sm:mb-6 drop-shadow-md max-w-md font-body">{b.subtitle}</p>
+                    <Link to={b.link} className="inline-block bg-surface hover:bg-surface-container-high text-primary font-headline font-bold text-xs sm:text-sm px-6 sm:px-8 py-2.5 sm:py-3 rounded-full transition-colors shadow-lg btn-press uppercase tracking-widest">{b.buttonText}</Link>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
-        ) : visible.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-            {visible.map((p, i) => (
-              <div key={p._id || p.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 0.06}s` }}>
-                <ProductCard product={p} />
-              </div>
+          <button onClick={() => { prevSlide(); resetTimer() }} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-surface/80 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer active:scale-90 shadow-lg z-10">
+            <span className="material-symbols-outlined text-primary">chevron_left</span>
+          </button>
+          <button onClick={() => { nextSlide(); resetTimer() }} className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-surface/80 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer active:scale-90 shadow-lg z-10">
+            <span className="material-symbols-outlined text-primary">chevron_right</span>
+          </button>
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+            {BANNERS.map((_, i) => (
+              <button key={i} onClick={() => { goToSlide(i); resetTimer() }}
+                className={`rounded-full cursor-pointer transition-all duration-300 ${i === slide ? "w-8 h-2 bg-surface shadow-md" : "w-2 h-2 bg-surface/50 hover:bg-surface/80"}`} />
             ))}
           </div>
-        ) : (
-          <div className="text-center py-16 animate-fade-in">
-            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3">
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            <p className="text-gray-500 dark:text-gray-400 font-medium">No products in this category yet</p>
-          </div>
-        )}
-
-        {/* pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-1.5 sm:gap-2 mt-8 flex-wrap reveal">
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={safePage === 1}
-              className="px-3 py-2 text-xs sm:text-sm rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-30 hover:bg-green-50 dark:hover:bg-gray-800 dark:text-white cursor-pointer disabled:cursor-not-allowed transition-colors btn-press"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(num => (
-              <button
-                key={num}
-                onClick={() => setPage(num)}
-                className={`w-9 h-9 text-xs sm:text-sm rounded-lg font-semibold cursor-pointer transition-all btn-press ${
-                  safePage === num
-                    ? "bg-green-600 text-white shadow-md shadow-green-600/20"
-                    : "border border-gray-200 dark:border-gray-700 hover:bg-green-50 dark:hover:bg-gray-800 dark:text-white"
-                }`}
-              >
-                {num}
-              </button>
-            ))}
-            <button
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={safePage === totalPages}
-              className="px-3 py-2 text-xs sm:text-sm rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-30 hover:bg-green-50 dark:hover:bg-gray-800 dark:text-white cursor-pointer disabled:cursor-not-allowed transition-colors btn-press"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-        )}
+        </div>
       </div>
 
-      {/* bottom banner */}
-      <div className="max-w-screen-xl mx-auto px-4 pb-10 reveal">
-        <Banner data={BANNER_CONTENT.bottom} />
+      {/* ===== HEADER SECTION (Breadcrumb + Title) ===== */}
+      <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12 pt-12 sm:pt-16">
+        <header className="mb-10 sm:mb-14">
+          <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-outline-variant/20 pb-8 gap-4">
+            <div>
+              <nav className="flex gap-2 text-xs font-label uppercase tracking-widest text-on-surface-variant mb-4">
+                <span className="hover:text-primary cursor-pointer">VintunaStore</span>
+                <span>/</span>
+                <span className="text-primary font-semibold">{selectedCat === "All" ? "All Products" : selectedCat}</span>
+              </nav>
+              <h1 className="text-4xl sm:text-5xl font-headline font-extrabold tracking-tighter text-primary">
+                {selectedCat === "All" ? "Fresh Groceries" : selectedCat}
+              </h1>
+            </div>
+            <div className="hidden md:block">
+              <p className="max-w-md text-on-surface-variant leading-relaxed font-body text-sm">
+                Discover fresh groceries and daily essentials, delivered fast to your doorstep in Kathmandu. Quality products at honest prices.
+              </p>
+            </div>
+          </div>
+        </header>
+
+        {/* ===== SIDEBAR + GRID LAYOUT ===== */}
+        <div className="flex flex-col md:flex-row gap-10 lg:gap-16">
+
+          {/* Mobile filter toggle */}
+          <button
+            onClick={() => setShowMobileFilters(!showMobileFilters)}
+            className="md:hidden flex items-center justify-center gap-2 py-3 border border-outline-variant/20 rounded-xl text-sm font-label font-bold text-primary uppercase tracking-widest cursor-pointer hover:bg-surface-container-low transition-colors"
+          >
+            <span className="material-symbols-outlined text-[20px]">tune</span>
+            {showMobileFilters ? "Hide Filters" : "Show Filters"}
+          </button>
+
+          {/* Mobile filters drawer */}
+          {showMobileFilters && (
+            <div className="md:hidden animate-fade-in-up pb-4 border-b border-outline-variant/10">
+              {sidebarContent}
+            </div>
+          )}
+
+          {/* Desktop Sidebar Filters */}
+          <aside className="hidden md:block w-full md:w-60 lg:w-64 flex-shrink-0">
+            <div className="sticky top-28">
+              {sidebarContent}
+            </div>
+          </aside>
+
+          {/* Product Grid Area */}
+          <div className="flex-1 min-w-0">
+            {/* Sorting & Count */}
+            <div className="flex justify-between items-center mb-8">
+              <p className="text-sm font-label text-on-surface-variant">
+                Showing <span className="text-primary font-bold">{visible.length}</span> of {filtered.length} products
+              </p>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-label uppercase tracking-widest opacity-60 hidden sm:block">Sort By</span>
+                <select
+                  className="bg-transparent border-none text-xs font-label font-bold text-primary focus:ring-0 cursor-pointer"
+                  value={sortBy}
+                  onChange={e => { setSortBy(e.target.value); setPage(1) }}
+                >
+                  {SORT_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Product Grid */}
+            {loading ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+                {[...Array(9)].map((_, i) => (
+                  <div key={i} className="bg-white/50 rounded-2xl p-3 border border-outline-variant/8">
+                    <div className="aspect-square skeleton-shimmer rounded-xl mb-3" />
+                    <div className="h-3 skeleton-shimmer rounded w-3/4 mb-1.5" />
+                    <div className="h-2.5 skeleton-shimmer rounded w-1/2 mb-1.5" />
+                    <div className="h-3 skeleton-shimmer rounded w-1/3" />
+                  </div>
+                ))}
+              </div>
+            ) : visible.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+                {visible.map((p, i) => (
+                  <div key={p._id || p.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 0.05}s` }}>
+                    <ProductCard product={p} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20 animate-fade-in">
+                <span className="material-symbols-outlined text-outline text-5xl mb-4 block">search_off</span>
+                <p className="font-headline font-bold text-primary text-lg mb-1">No products found</p>
+                <p className="text-on-surface-variant text-sm mb-6">Try adjusting your filters or browse a different category</p>
+                <button onClick={clearFilters} className="text-secondary font-label font-bold text-xs uppercase tracking-widest cursor-pointer hover:underline">
+                  Clear All Filters
+                </button>
+              </div>
+            )}
+
+            {/* ===== ATELIER PAGINATION ===== */}
+            {totalPages > 1 && (
+              <div className="mt-20 sm:mt-24 flex justify-center items-center gap-6 sm:gap-8 border-t border-outline-variant/10 pt-10 sm:pt-12 mb-8 sm:mb-12">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={safePage === 1}
+                  className="text-xs font-label uppercase tracking-widest opacity-40 hover:opacity-100 disabled:hover:opacity-40 transition-opacity flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+                >
+                  <span className="material-symbols-outlined scale-75">west</span> Previous
+                </button>
+                <div className="flex gap-4 sm:gap-6">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(num => {
+                    // Show first, last, and pages around current
+                    const show = num === 1 || num === totalPages || Math.abs(num - safePage) <= 1
+                    const showEllipsis = num === 2 && safePage > 3 || num === totalPages - 1 && safePage < totalPages - 2
+                    if (!show && showEllipsis) return <span key={num} className="text-xs font-label text-on-surface-variant opacity-40">...</span>
+                    if (!show) return null
+                    return (
+                      <button
+                        key={num}
+                        onClick={() => setPage(num)}
+                        className={`text-xs font-label cursor-pointer transition-opacity ${
+                          safePage === num
+                            ? "font-bold text-primary border-b-2 border-primary pb-1"
+                            : "text-on-surface-variant opacity-40 hover:opacity-100"
+                        }`}
+                      >
+                        {String(num).padStart(2, '0')}
+                      </button>
+                    )
+                  })}
+                </div>
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={safePage === totalPages}
+                  className="text-xs font-label uppercase tracking-widest text-primary hover:text-secondary disabled:opacity-40 disabled:hover:text-primary transition-colors flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+                >
+                  Next <span className="material-symbols-outlined scale-75">east</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ===== BOTTOM BANNER ===== */}
+      <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12 py-12 sm:py-16 reveal">
+        <div className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-velvet-gradient p-8 sm:p-12">
+          <div className="absolute top-0 right-0 w-60 h-60 bg-gold/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
+          <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="text-center sm:text-left">
+              <h3 className="text-2xl sm:text-3xl font-headline font-extrabold text-white mb-2 tracking-tight">Fresh deals every day!</h3>
+              <p className="text-white/70 text-sm sm:text-base font-body">Quality groceries at honest prices, delivered to your door.</p>
+            </div>
+            <Link to="/" className="shrink-0 bg-gold hover:bg-white text-primary-container font-headline font-bold px-8 py-3.5 rounded-full transition-colors text-sm uppercase tracking-widest btn-press shadow-lg">
+              Shop Now
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -2,12 +2,12 @@ import { Link } from "react-router-dom"
 import { useCart } from "../../context/CartContext"
 
 const TAG_STYLES = {
-  "Best Seller": "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
-  "Popular Now": "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-  "Healthy": "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  "Organic": "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-  "New Arrival": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  "Limited": "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  "Best Seller": "bg-secondary-container text-on-secondary-container",
+  "Popular Now": "bg-primary text-on-primary",
+  "Healthy": "bg-primary-container text-on-primary-container",
+  "Organic": "bg-primary-container text-on-primary-container",
+  "New Arrival": "bg-primary text-white",
+  "Limited": "bg-secondary-container text-on-secondary-container",
 }
 
 export default function ProductCard({ product }) {
@@ -21,83 +21,78 @@ export default function ProductCard({ product }) {
   const tags = Array.isArray(product.tags) ? product.tags : []
 
   return (
-    <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-white/40 dark:border-gray-700/40 rounded-2xl p-3 relative group cursor-pointer hover-lift overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_40px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_8px_40px_rgba(0,0,0,0.5)]">
-      {/* discount tag */}
-      {discount > 0 && (
-        <span className="absolute top-2.5 right-2.5 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg z-10 shadow-sm">
-          -{discount}%
-        </span>
-      )}
-
-      {/* product tags */}
-      {tags.length > 0 && (
-        <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 z-10">
-          {tags.slice(0, 1).map(tag => (
-            <span key={tag} className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${TAG_STYLES[tag] || "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"}`}>
-              {tag}
+    <div className="group cursor-pointer bg-white/60 dark:bg-white/[0.04] backdrop-blur-3xl rounded-lg border border-black/[0.07] dark:border-white/[0.08] shadow-[0_2px_6px_rgba(0,0,0,0.1),0_6px_20px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.15),0_12px_36px_rgba(0,0,0,0.12)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.04)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-all duration-500 overflow-hidden">
+      {/* Image */}
+      <div className="relative aspect-[6/5] overflow-hidden bg-surface-container-low">
+        {discount > 0 && (
+          <div className="absolute top-1.5 left-1.5 z-10">
+            <span className="bg-secondary-container/90 backdrop-blur-sm text-on-secondary-container text-[7px] font-bold uppercase tracking-widest px-1.5 py-px rounded">
+              {discount}%
             </span>
-          ))}
-        </div>
-      )}
+          </div>
+        )}
 
-      {/* out of stock overlay */}
-      {!product.inStock && (
-        <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-[2px] flex items-center justify-center rounded-2xl z-10">
-          <span className="text-red-500 font-bold text-sm bg-white dark:bg-gray-800 px-3 py-1 rounded-lg shadow-sm">Out of Stock</span>
-        </div>
-      )}
+        {tags.length > 0 && discount === 0 && (
+          <div className="absolute top-1.5 left-1.5 z-10">
+            <span className={`text-[7px] font-bold uppercase tracking-widest px-1.5 py-px rounded backdrop-blur-sm ${TAG_STYLES[tags[0]] || "bg-primary text-white"}`}>
+              {tags[0]}
+            </span>
+          </div>
+        )}
 
-      <Link to={`/product/${product.id}`}>
-        <div className="flex justify-center mb-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl overflow-hidden">
+        {!product.inStock && (
+          <div className="absolute inset-0 bg-white/60 dark:bg-surface/60 backdrop-blur-[3px] flex items-center justify-center z-20">
+            <span className="text-error font-headline font-bold text-[9px] bg-white px-2 py-0.5 rounded-full shadow-[0_1px_4px_rgba(0,0,0,0.12)]">Out of Stock</span>
+          </div>
+        )}
+
+        <Link to={`/product/${product.id}`}>
           <img
             src={product.image}
             alt={product.name}
-            className="w-full h-32 sm:h-36 object-cover rounded-xl group-hover:scale-[1.06] transition-transform duration-300 ease-out"
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
           />
-        </div>
-      </Link>
+        </Link>
 
-      <div className="space-y-1.5">
-        <p className="text-[10px] text-green-600 dark:text-green-500 font-semibold tracking-wide uppercase">VintunaStore</p>
+        {product.inStock !== false && qty === 0 && (
+          <button
+            onClick={() => addToCart(product)}
+            className="absolute bottom-1.5 right-1.5 bg-white/80 dark:bg-white/[0.1] backdrop-blur-2xl p-1.5 rounded-full opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 cursor-pointer active:scale-90 shadow-[0_2px_8px_rgba(0,0,0,0.15)] z-10"
+          >
+            <span className="material-symbols-outlined text-primary text-[14px]">add_shopping_cart</span>
+          </button>
+        )}
 
+        {qty > 0 && (
+          <div className="absolute bottom-1.5 right-1.5 flex items-center bg-primary-container/90 backdrop-blur-xl rounded-full px-0.5 py-px shadow-[0_2px_8px_rgba(0,0,0,0.18)] z-10 animate-scale-in">
+            <button onClick={() => decreaseQty(product.id)} className="w-4.5 h-4.5 flex items-center justify-center text-on-primary-container hover:bg-white/20 rounded-full font-bold text-[9px] cursor-pointer transition-colors">
+              {qty === 1 ? <span className="material-symbols-outlined text-[11px]">delete</span> : "−"}
+            </button>
+            <span className="w-3.5 text-center font-bold text-on-primary-container text-[9px] font-headline">{qty}</span>
+            <button onClick={() => increaseQty(product.id)} className="w-4.5 h-4.5 flex items-center justify-center text-on-primary-container hover:bg-white/20 rounded-full font-bold text-[9px] cursor-pointer transition-colors">+</button>
+          </div>
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="px-2 py-1.5 space-y-px">
         <Link to={`/product/${product.id}`}>
-          <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200 line-clamp-2 hover:text-green-600 dark:hover:text-green-400 transition-colors leading-snug">
+          <h3 className="font-headline font-bold text-[10px] sm:text-[11px] text-on-surface leading-tight hover:text-secondary transition-colors line-clamp-1">
             {product.name}
           </h3>
         </Link>
-
-        <div className="flex items-baseline gap-2 pt-0.5">
-          <span className="text-base font-bold text-gray-900 dark:text-white">Rs.{product.price}</span>
-          {discount > 0 && (
-            <span className="text-xs text-gray-400 line-through">Rs.{product.originalPrice}</span>
-          )}
-        </div>
-
-        {/* add / qty controls */}
-        <div className="pt-1">
-          {qty === 0 ? (
-            <button
-              onClick={() => addToCart(product)}
-              disabled={!product.inStock}
-              className="w-full border-2 border-green-600 text-green-600 font-bold text-sm py-1.5 rounded-xl hover:bg-green-600 hover:text-white transition-all duration-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-green-600 cursor-pointer btn-press"
-            >
-              ADD
-            </button>
-          ) : (
-            <div className="flex items-center justify-between bg-green-600 rounded-xl py-1.5 px-1 animate-scale-in">
-              <button onClick={() => decreaseQty(product.id)} className="text-white font-bold text-lg w-8 h-6 flex items-center justify-center hover:bg-green-700 rounded-lg cursor-pointer transition-colors">
-                {qty === 1 ? (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                ) : "−"}
-              </button>
-              <span className="text-white font-bold text-sm min-w-[20px] text-center">{qty}</span>
-              <button onClick={() => increaseQty(product.id)} className="text-white font-bold text-lg w-8 h-6 flex items-center justify-center hover:bg-green-700 rounded-lg cursor-pointer transition-colors">
-                +
-              </button>
-            </div>
-          )}
+        <p className="text-[7px] font-label text-on-surface/40 uppercase tracking-widest">{product.category}</p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            <span className="text-on-surface font-bold font-headline text-[11px]">Rs.{product.price}</span>
+            {discount > 0 && (
+              <span className="text-on-surface/25 line-through text-[8px]">Rs.{product.originalPrice}</span>
+            )}
+          </div>
+          <div className="flex items-center text-secondary gap-px">
+            <span className="material-symbols-outlined text-[9px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+            <span className="text-[7px] font-bold">4.8</span>
+          </div>
         </div>
       </div>
     </div>

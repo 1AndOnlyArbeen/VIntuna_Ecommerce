@@ -8,57 +8,58 @@ export default function AdminDashboard() {
   const totalCategories = categories.length
 
   const stats = [
-    { label: "Total Products", value: totalProducts, color: "bg-green-500", link: "/admin/products" },
-    { label: "In Stock", value: inStock, color: "bg-blue-500", link: "/admin/products" },
-    { label: "Out of Stock", value: outOfStock, color: "bg-red-500", link: "/admin/products" },
-    { label: "Categories", value: totalCategories, color: "bg-yellow-500", link: "/admin/categories" },
-    { label: "Banners", value: 3, color: "bg-purple-500", link: "/admin/banners" },
-    { label: "Discounts", value: 5, color: "bg-pink-500", link: "/admin/discounts" },
+    { label: "Total Products", value: totalProducts, icon: "inventory_2", color: "bg-primary-container text-on-primary-container", link: "/admin/products" },
+    { label: "In Stock", value: inStock, icon: "check_circle", color: "bg-primary/10 text-primary", link: "/admin/products" },
+    { label: "Out of Stock", value: outOfStock, icon: "cancel", color: "bg-error/10 text-error", link: "/admin/products" },
+    { label: "Categories", value: totalCategories, icon: "category", color: "bg-secondary-container text-on-secondary-container", link: "/admin/categories" },
+    { label: "Banners", value: 3, icon: "image", color: "bg-primary/5 text-primary", link: "/admin/banners" },
+    { label: "Discounts", value: 5, icon: "sell", color: "bg-gold/20 text-secondary", link: "/admin/discounts" },
   ]
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Overview</h1>
+      <h1 className="text-2xl sm:text-3xl font-headline font-extrabold text-on-surface tracking-tight text-center mb-8">Dashboard Overview</h1>
 
-      {/* stats grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-8">
         {stats.map(s => (
           <Link
             key={s.label}
             to={s.link}
-            className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow"
+            className="bg-white/60 backdrop-blur-2xl rounded-xl p-5 border border-black/[0.06] shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.1)] transition-all"
           >
-            <div className={`w-10 h-10 ${s.color} rounded-lg flex items-center justify-center text-white font-bold text-lg mb-3`}>
-              {s.value}
+            <div className={`w-10 h-10 ${s.color} rounded-lg flex items-center justify-center mb-3`}>
+              <span className="material-symbols-outlined text-[20px]">{s.icon}</span>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">{s.label}</p>
+            <p className="text-2xl font-headline font-extrabold text-on-surface">{s.value}</p>
+            <p className="text-xs text-on-surface/50 font-label mt-1">{s.label}</p>
           </Link>
         ))}
       </div>
 
-      {/* recent products */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5">
+      {/* Recent products */}
+      <div className="bg-white/60 backdrop-blur-2xl rounded-xl border border-black/[0.06] shadow-[0_2px_8px_rgba(0,0,0,0.06)] p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold text-gray-800 dark:text-white">Recent Products</h2>
-          <Link to="/admin/products" className="text-green-600 text-sm hover:underline">View all</Link>
+          <h2 className="font-headline font-bold text-on-surface">Recent Products</h2>
+          <Link to="/admin/products" className="text-secondary text-xs font-label font-bold hover:underline uppercase tracking-widest">View all</Link>
         </div>
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-gray-500 dark:text-gray-400 border-b dark:border-gray-700">
-              <th className="pb-2">Name</th>
-              <th className="pb-2">Category</th>
-              <th className="pb-2">Price</th>
-              <th className="pb-2">Status</th>
+            <tr className="text-left text-on-surface/50 border-b border-black/[0.06]">
+              <th className="pb-2 font-label text-[11px] uppercase tracking-widest">Name</th>
+              <th className="pb-2 font-label text-[11px] uppercase tracking-widest">Category</th>
+              <th className="pb-2 font-label text-[11px] uppercase tracking-widest">Price</th>
+              <th className="pb-2 font-label text-[11px] uppercase tracking-widest">Status</th>
             </tr>
           </thead>
           <tbody>
             {products.slice(0, 5).map(p => (
-              <tr key={p.id} className="border-b dark:border-gray-700 last:border-0">
-                <td className="py-2.5 text-gray-800 dark:text-gray-200">{p.name}</td>
-                <td className="py-2.5 text-gray-500 dark:text-gray-400">{p.category}</td>
-                <td className="py-2.5 text-gray-800 dark:text-gray-200">Rs.{p.price}</td>
+              <tr key={p.id} className="border-b border-outline-variant/10 last:border-0">
+                <td className="py-2.5 text-on-surface font-label font-medium">{p.name}</td>
+                <td className="py-2.5 text-on-surface/60 font-label">{p.category}</td>
+                <td className="py-2.5 text-on-surface font-headline font-bold">Rs.{p.price}</td>
                 <td className="py-2.5">
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded ${p.inStock ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-400"}`}>
+                  <span className={`text-[10px] font-label font-bold px-2 py-0.5 rounded-full ${p.inStock ? "bg-primary/10 text-primary" : "bg-error/10 text-error"}`}>
                     {p.inStock ? "In Stock" : "Out"}
                   </span>
                 </td>

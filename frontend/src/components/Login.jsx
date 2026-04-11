@@ -20,10 +20,8 @@ export default function Login() {
   async function handleSubmit(e) {
     e.preventDefault()
     if (!email || !password) return
-
     setLoading(true)
     setError("")
-
     try {
       const res = await loginAPI(email, password)
       localStorage.setItem("vintuna-token", res.data.accessToken)
@@ -31,88 +29,55 @@ export default function Login() {
       navigate("/")
     } catch (err) {
       setError(err.message || "Login failed. Check your credentials.")
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
   return (
-    <div className="min-h-[75vh] flex items-center justify-center px-4 dark:bg-gray-900 py-12">
+    <div className="min-h-[75vh] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm animate-fade-in-up">
-        {/* header */}
-        <div className="text-center mb-6">
-          <div className="w-14 h-14 bg-green-100 dark:bg-green-900/40 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <svg className="w-7 h-7 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-primary/5 rounded-full flex items-center justify-center mx-auto mb-5">
+            <span className="material-symbols-outlined text-primary-container text-3xl">person</span>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome back</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Sign in to your VintunaStore account</p>
+          <h2 className="text-3xl font-headline font-extrabold text-primary tracking-tight">Welcome back</h2>
+          <p className="text-sm text-on-surface-variant mt-2 font-label">Sign in to your VintunaStore account</p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/50 p-6 sm:p-7">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-[0_12px_40px_rgba(26,28,27,0.04)] border border-outline-variant/10 p-7">
           {successMessage && (
-            <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 text-sm px-4 py-2.5 rounded-xl mb-4 animate-fade-in-down">
-              {successMessage}
-            </div>
+            <div className="bg-primary/5 border border-primary/20 text-primary-container text-sm px-4 py-3 rounded-xl mb-4 animate-fade-in-down font-label">{successMessage}</div>
           )}
-
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm px-4 py-2.5 rounded-xl mb-4 animate-fade-in-down">
-              {error}
-            </div>
+            <div className="bg-error/5 border border-error/20 text-error text-sm px-4 py-3 rounded-xl mb-4 animate-fade-in-down font-label">{error}</div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Email</label>
-              <input
-                type="text"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700/50 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-shadow"
-                required
-              />
+              <label className="block text-xs font-label font-bold uppercase tracking-widest text-on-surface-variant mb-2">Email</label>
+              <input type="text" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com"
+                className="w-full border border-outline-variant/30 rounded-xl px-4 py-3 text-sm font-label focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" required />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Password</label>
+              <label className="block text-xs font-label font-bold uppercase tracking-widest text-on-surface-variant mb-2">Password</label>
               <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700/50 dark:text-white rounded-xl px-4 py-2.5 pr-16 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-shadow"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xs font-medium cursor-pointer transition-colors"
-                >
+                <input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter your password"
+                  className="w-full border border-outline-variant/30 rounded-xl px-4 py-3 pr-16 text-sm font-label focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" required />
+                <button type="button" onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary text-xs font-label font-bold cursor-pointer transition-colors uppercase tracking-widest">
                   {showPassword ? "Hide" : "Show"}
                 </button>
               </div>
             </div>
 
             <div className="flex justify-end">
-              <Link to="/forgot-password" className="text-xs text-green-600 dark:text-green-400 font-medium hover:underline">
-                Forgot password?
-              </Link>
+              <Link to="/forgot-password" className="text-xs text-secondary font-label font-bold hover:underline uppercase tracking-widest">Forgot password?</Link>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl disabled:opacity-50 transition-colors btn-press cursor-pointer"
-            >
+            <button type="submit" disabled={loading}
+              className="w-full bg-velvet-gradient text-on-primary font-headline font-bold py-3.5 rounded-full disabled:opacity-50 transition-all btn-press cursor-pointer uppercase tracking-widest text-sm shadow-lg">
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
                   Signing in...
                 </span>
               ) : "Sign In"}
@@ -120,11 +85,9 @@ export default function Login() {
           </form>
         </div>
 
-        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-5">
+        <p className="text-center text-sm text-on-surface-variant mt-6 font-label">
           Don't have an account?{" "}
-          <Link to="/signup" className="text-green-600 dark:text-green-400 font-semibold hover:underline">
-            Create one
-          </Link>
+          <Link to="/signup" className="text-secondary font-headline font-bold hover:underline">Create one</Link>
         </p>
       </div>
     </div>

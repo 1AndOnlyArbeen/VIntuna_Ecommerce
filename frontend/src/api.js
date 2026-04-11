@@ -12,13 +12,26 @@ async function apiCall(endpoint, options = {}) {
     headers["Content-Type"] = "application/json"
   }
 
-  const res = await fetch(`${BASE_URL}${endpoint}`, {
-    credentials: "include",
-    headers: { ...headers, ...options.headers },
-    ...options,
-  })
+  const { signal, ...restOptions } = options
 
-  const data = await res.json()
+  let res
+  try {
+    res = await fetch(`${BASE_URL}${endpoint}`, {
+      credentials: "include",
+      headers: { ...headers, ...restOptions.headers },
+      signal,
+      ...restOptions,
+    })
+  } catch (err) {
+    throw new Error(err.name === "AbortError" ? "Request timed out" : "Network error — server may be offline")
+  }
+
+  let data
+  try {
+    data = await res.json()
+  } catch {
+    throw new Error("Invalid response from server")
+  }
 
   if (!res.ok) {
     throw new Error(data.message || "Something went wrong")
@@ -42,8 +55,8 @@ export async function verifyEmailAPI(code) {
 export async function logoutAPI() {
   return apiCall("/users/logout", { method: "POST" })
 }
-export async function getUserDetailsAPI() {
-  return apiCall("/users/login-user-details", { method: "GET" })
+export async function getUserDetailsAPI(opts = {}) {
+  return apiCall("/users/login-user-details", { method: "GET", ...opts })
 }
 export async function forgetPasswordAPI(email) {
   return apiCall("/users/forget-password", { method: "POST", body: JSON.stringify({ email }) })

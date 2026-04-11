@@ -10,7 +10,6 @@ export default function CartSidebar() {
     sidebarOpen, setSidebarOpen,
   } = useCart()
 
-  // lock body scroll when open
   useEffect(() => {
     if (sidebarOpen) document.body.style.overflow = "hidden"
     else document.body.style.overflow = ""
@@ -25,37 +24,33 @@ export default function CartSidebar() {
       {/* Backdrop */}
       <div
         onClick={() => setSidebarOpen(false)}
-        className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-50 transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-black/30 backdrop-blur-sm z-50 transition-opacity duration-300 ${
           sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
       />
 
       {/* Sidebar panel */}
       <div
-        className={`fixed top-0 right-0 h-full w-full max-w-md bg-white dark:bg-gray-900 z-50 shadow-2xl flex flex-col transition-transform duration-300 ease-out ${
+        className={`fixed top-0 right-0 h-full w-full max-w-md bg-surface z-50 shadow-[0_0_60px_rgba(0,0,0,0.1)] flex flex-col transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
           sidebarOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
-          <h2 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
-            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
-            </svg>
+        <div className="flex items-center justify-between px-6 py-5 border-b border-outline-variant/10 shrink-0">
+          <h2 className="text-lg font-headline font-bold text-primary flex items-center gap-3">
+            <span className="material-symbols-outlined text-primary-container">shopping_bag</span>
             My Cart
             {cartCount > 0 && (
-              <span className="bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 text-xs font-bold px-2 py-0.5 rounded-full">
+              <span className="bg-secondary-container text-on-secondary-container text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-widest">
                 {cartCount}
               </span>
             )}
           </h2>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-container-high dark:hover:bg-gray-800 cursor-pointer transition-colors"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <span className="material-symbols-outlined text-on-surface-variant">close</span>
           </button>
         </div>
 
@@ -63,49 +58,44 @@ export default function CartSidebar() {
         <div className="flex-1 overflow-y-auto">
           {cart.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full px-6">
-              <img src={emptyCartImg} alt="empty cart" className="w-32 mb-4 opacity-80" />
-              <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-1">Your cart is empty</h3>
-              <p className="text-gray-500 dark:text-gray-400 text-sm mb-5">Add some items and come back!</p>
+              <img src={emptyCartImg} alt="empty cart" className="w-32 mb-6 opacity-80" />
+              <h3 className="text-lg font-headline font-bold text-primary mb-1">Your cart is empty</h3>
+              <p className="text-on-surface-variant text-sm mb-6 font-label">Add some items and come back!</p>
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="bg-green-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-green-700 cursor-pointer transition-colors"
+                className="bg-velvet-gradient text-on-primary font-headline font-bold px-8 py-3 rounded-full hover:opacity-90 cursor-pointer transition-all uppercase tracking-widest text-xs"
               >
                 Start Shopping
               </button>
             </div>
           ) : (
-            <div className="px-4 py-3 space-y-3">
+            <div className="px-5 py-4 space-y-3">
               {cart.map(item => (
-                <div key={item.id} className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800/60 rounded-xl p-3">
+                <div key={item.id} className="flex items-center gap-4 bg-surface-container-low rounded-xl p-4 transition-all hover:bg-surface-container dark:hover:bg-gray-800">
                   <Link to={`/product/${item.id}`} onClick={() => setSidebarOpen(false)}>
-                    <img src={item.image} alt={item.name} className="w-14 h-14 object-cover rounded-lg shrink-0" />
+                    <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-lg shrink-0" />
                   </Link>
                   <div className="flex-1 min-w-0">
-                    <Link
-                      to={`/product/${item.id}`}
-                      onClick={() => setSidebarOpen(false)}
-                      className="text-sm font-medium text-gray-800 dark:text-gray-200 hover:text-green-700 dark:hover:text-green-400 truncate block cursor-pointer"
-                    >
+                    <Link to={`/product/${item.id}`} onClick={() => setSidebarOpen(false)}
+                      className="text-sm font-headline font-bold text-primary hover:text-secondary dark:hover:text-green-400 truncate block cursor-pointer transition-colors">
                       {item.name}
                     </Link>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-sm font-bold text-gray-900 dark:text-white">Rs.{item.price}</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-sm font-bold text-primary font-headline">Rs.{item.price}</span>
                       {item.originalPrice > item.price && (
-                        <span className="text-xs text-gray-400 line-through">Rs.{item.originalPrice}</span>
+                        <span className="text-xs text-on-surface-variant/50 line-through">Rs.{item.originalPrice}</span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <button onClick={() => decreaseQty(item.id)} className="w-6 h-6 flex items-center justify-center border border-green-600 text-green-600 rounded-md font-bold hover:bg-green-600 hover:text-white text-xs cursor-pointer transition-colors">-</button>
-                      <span className="w-5 text-center font-bold text-gray-800 dark:text-white text-xs">{item.quantity}</span>
-                      <button onClick={() => increaseQty(item.id)} className="w-6 h-6 flex items-center justify-center border border-green-600 text-green-600 rounded-md font-bold hover:bg-green-600 hover:text-white text-xs cursor-pointer transition-colors">+</button>
+                    <div className="flex items-center gap-2 mt-2">
+                      <button onClick={() => decreaseQty(item.id)} className="w-7 h-7 flex items-center justify-center border border-primary-container text-primary-container rounded-full font-bold hover:bg-primary-container hover:text-on-primary-container text-xs cursor-pointer transition-colors">−</button>
+                      <span className="w-5 text-center font-bold text-primary text-xs font-headline">{item.quantity}</span>
+                      <button onClick={() => increaseQty(item.id)} className="w-7 h-7 flex items-center justify-center border border-primary-container text-primary-container rounded-full font-bold hover:bg-primary-container hover:text-on-primary-container text-xs cursor-pointer transition-colors">+</button>
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <span className="font-bold text-gray-900 dark:text-white text-sm block">Rs.{item.price * item.quantity}</span>
-                    <button onClick={() => removeFromCart(item.id)} className="text-gray-400 hover:text-red-500 cursor-pointer mt-1 transition-colors">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
+                    <span className="font-bold text-primary text-sm font-headline block">Rs.{item.price * item.quantity}</span>
+                    <button onClick={() => removeFromCart(item.id)} className="text-on-surface-variant/40 hover:text-error cursor-pointer mt-2 transition-colors">
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
                     </button>
                   </div>
                 </div>
@@ -114,37 +104,32 @@ export default function CartSidebar() {
           )}
         </div>
 
-        {/* Footer with totals & actions */}
+        {/* Footer */}
         {cart.length > 0 && (
-          <div className="border-t border-gray-100 dark:border-gray-800 px-5 py-4 shrink-0 space-y-3">
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                <span>Item Total</span><span>Rs.{cartTotal}</span>
+          <div className="border-t border-outline-variant/10 px-6 py-5 shrink-0 space-y-4">
+            <div className="space-y-2 text-sm font-label">
+              <div className="flex justify-between text-on-surface-variant">
+                <span>Item Total</span><span className="font-medium">Rs.{cartTotal}</span>
               </div>
-              <div className="flex justify-between text-gray-600 dark:text-gray-400">
+              <div className="flex justify-between text-on-surface-variant">
                 <span>Delivery Fee</span>
-                <span className={deliveryFee === 0 ? "text-green-600 font-medium" : ""}>{deliveryFee === 0 ? "FREE" : `Rs.${deliveryFee}`}</span>
+                <span className={deliveryFee === 0 ? "text-primary-container font-bold" : "font-medium"}>{deliveryFee === 0 ? "FREE" : `Rs.${deliveryFee}`}</span>
               </div>
               {deliveryFee > 0 && (
-                <p className="text-xs text-green-600">Add Rs.{200 - cartTotal} more for free delivery!</p>
+                <p className="text-xs text-secondary font-medium">Add Rs.{200 - cartTotal} more for free delivery!</p>
               )}
-              <div className="flex justify-between font-bold text-gray-900 dark:text-white text-base pt-1 border-t border-gray-100 dark:border-gray-800">
+              <div className="flex justify-between font-headline font-bold text-primary text-base pt-2 border-t border-outline-variant/10">
                 <span>Grand Total</span><span>Rs.{grandTotal}</span>
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <button
-                onClick={clearCart}
-                className="px-4 py-2.5 text-xs font-medium text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 cursor-pointer transition-colors"
-              >
+            <div className="flex gap-3">
+              <button onClick={clearCart}
+                className="px-5 py-3 text-xs font-label font-bold text-error bg-error/5 rounded-full hover:bg-error/10 cursor-pointer transition-colors uppercase tracking-widest">
                 Clear
               </button>
-              <Link
-                to="/cart"
-                onClick={() => setSidebarOpen(false)}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl text-sm text-center cursor-pointer transition-colors shadow-lg shadow-green-600/20"
-              >
+              <Link to="/cart" onClick={() => setSidebarOpen(false)}
+                className="flex-1 bg-velvet-gradient text-on-primary font-headline font-bold py-3 rounded-full text-sm text-center cursor-pointer transition-all hover:opacity-90 shadow-lg shadow-primary/10 uppercase tracking-widest">
                 Checkout — Rs.{grandTotal}
               </Link>
             </div>

@@ -56,45 +56,54 @@ export default function Header() {
   }
 
   return (
-    <header className="bg-white/70 dark:bg-gray-900/80 backdrop-blur-2xl sticky top-0 z-50 shadow-[0_1px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_20px_rgba(0,0,0,0.4)] border-b border-gray-200/40 dark:border-gray-800/50 transition-colors duration-300">
-      <div className="max-w-screen-xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-4">
+    <header className="fixed top-0 w-full z-50 bg-[#ededeb]/80 dark:bg-[#151a27]/80 backdrop-blur-2xl backdrop-saturate-150 border-b border-black/8 shadow-[0_2px_8px_rgba(0,0,0,0.12),0_6px_28px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)]">
+      <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12 py-4 flex items-center justify-between gap-4">
 
-        {/* logo */}
-        <Link to="/" className="shrink-0 hover:opacity-80 transition-opacity">
-          <img src={logo} alt="VintunaStore" className="h-8 sm:h-12 object-contain" />
-        </Link>
+        {/* Logo */}
+        <div className="flex items-center gap-6 lg:gap-10">
+          <Link to="/" className="shrink-0 hover:opacity-80 transition-opacity flex items-center gap-2">
+            <img src={logo} alt="VintunaStore" className="h-8 sm:h-10 object-contain" />
+          </Link>
+
+          {/* Desktop nav links */}
+          <nav className="hidden lg:flex items-center gap-8">
+            <Link to="/" className="font-headline font-semibold text-primary tracking-tight hover:text-secondary transition-colors duration-300">
+              Shop
+            </Link>
+            <Link to="/search?q=Nepali" className="font-headline font-semibold text-primary/60 tracking-tight hover:text-secondary transition-colors duration-300">
+              Categories
+            </Link>
+            <Link to="/contact" className="font-headline font-semibold text-primary/60 tracking-tight hover:text-secondary transition-colors duration-300">
+              Contact
+            </Link>
+          </nav>
+        </div>
 
         {/* Desktop search */}
-        <form onSubmit={handleSearch} className="flex-1 max-w-xl hidden sm:block">
-          <div className="flex bg-gray-100/80 dark:bg-gray-800 rounded-xl overflow-hidden ring-1 ring-gray-200/60 dark:ring-gray-700">
-            <div className="pl-3 flex items-center text-gray-400">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
+        <form onSubmit={handleSearch} className="flex-1 max-w-xl hidden md:flex">
+          <div className="relative w-full">
+            <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface/40 text-[20px]">search</span>
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder='Search "dal, momo, milk..."'
-              className="flex-1 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 bg-transparent focus:outline-none min-w-0 placeholder:text-gray-400"
+              className="w-full bg-white/70 dark:bg-white/[0.06] border border-outline-variant/20 rounded-full py-2.5 pl-10 pr-24 focus:outline-none focus:border-primary/50 focus:bg-white focus:shadow-[0_0_0_3px_rgba(26,59,30,0.08)] transition-all text-sm font-label text-on-surface placeholder:text-on-surface/35"
             />
-            <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-2.5 text-sm cursor-pointer shrink-0 transition-all btn-press">
+            <button type="submit" className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-primary hover:bg-on-surface text-white font-label font-bold text-xs px-4 py-1.5 rounded-full cursor-pointer transition-all uppercase tracking-widest shadow-[0_2px_6px_rgba(0,0,0,0.25),0_1px_2px_rgba(0,0,0,0.2)]">
               Search
             </button>
           </div>
         </form>
 
         {/* Right actions */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5">
+        <div className="flex items-center gap-3 sm:gap-4">
           {/* Mobile search toggle */}
           <button
             onClick={() => setShowMobileSearch(!showMobileSearch)}
-            className="sm:hidden w-8 h-8 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white cursor-pointer transition-colors"
+            className="md:hidden cursor-pointer hover:opacity-80 transition-opacity active:scale-95 bg-[#e5e4e2]/80 dark:bg-white/[0.08] w-9 h-9 rounded-full flex items-center justify-center border border-outline-variant/15"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+            <span className="material-symbols-outlined text-primary text-[20px]">search</span>
           </button>
 
           <DarkToggle />
@@ -102,86 +111,77 @@ export default function Header() {
           {/* User avatar / Login */}
           {user ? (
             <div className="relative" ref={dropdownRef}>
-              <button onClick={() => setShowDropdown(!showDropdown)} className="flex items-center gap-1.5 cursor-pointer group">
+              <button onClick={() => setShowDropdown(!showDropdown)} className="flex items-center gap-2 cursor-pointer group">
                 {user.avatar ? (
-                  <img src={user.avatar} alt={user.name} className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border-2 border-green-500 group-hover:border-green-400 transition-colors" />
+                  <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover ring-2 ring-primary-container group-hover:ring-secondary transition-colors" />
                 ) : (
-                  <div className="w-8 h-8 sm:w-9 sm:h-9 bg-green-600 group-hover:bg-green-500 text-white rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-colors">
+                  <div className="w-8 h-8 bg-primary-container group-hover:bg-primary text-on-primary-container group-hover:text-on-primary rounded-full flex items-center justify-center text-xs font-bold transition-colors">
                     {user.name?.charAt(0).toUpperCase() || "U"}
                   </div>
                 )}
-                <span className="text-gray-700 dark:text-gray-200 text-sm font-medium hidden md:block max-w-[80px] truncate">{user.name?.split(" ")[0]}</span>
-                <svg className={`w-3 h-3 text-gray-400 dark:text-gray-500 transition-transform duration-200 hidden sm:block ${showDropdown ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                <span className="text-on-surface text-sm font-medium hidden lg:block max-w-[80px] truncate font-headline">{user.name?.split(" ")[0]}</span>
               </button>
 
               {showDropdown && (
-                <div className="absolute right-0 top-full mt-2 w-64 sm:w-72 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl z-50 overflow-hidden animate-dropdown">
-                  <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
+                <div className="absolute right-0 top-full mt-3 w-72 bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-[0_12px_40px_rgba(26,28,27,0.08)] z-50 overflow-hidden animate-dropdown">
+                  <div className="p-4 bg-surface-container-low border-b border-outline-variant/10">
                     <div className="flex items-center gap-3">
                       {user.avatar ? (
-                        <img src={user.avatar} alt={user.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-green-500 shrink-0" />
+                        <img src={user.avatar} alt={user.name} className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-container shrink-0" />
                       ) : (
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-600 text-white rounded-full flex items-center justify-center text-base sm:text-lg font-bold shrink-0">
+                        <div className="w-11 h-11 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center text-lg font-bold shrink-0">
                           {user.name?.charAt(0).toUpperCase() || "U"}
                         </div>
                       )}
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-gray-800 dark:text-white truncate">{user.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
+                        <p className="text-sm font-headline font-bold text-primary truncate">{user.name}</p>
+                        <p className="text-xs text-on-surface-variant truncate">{user.email}</p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="py-1">
+                  <div className="py-2">
                     {[
-                      { to: "/profile", label: "My Account", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
-                      { to: "/orders", label: "My Orders", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" },
-                      { to: "/addresses", label: "My Addresses", icon: "M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" },
+                      { to: "/profile", label: "My Account", icon: "person" },
+                      { to: "/orders", label: "My Orders", icon: "receipt_long" },
+                      { to: "/addresses", label: "My Addresses", icon: "location_on" },
                     ].map(item => (
                       <Link
                         key={item.to}
                         to={item.to}
                         onClick={() => setShowDropdown(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-surface-container-high cursor-pointer transition-colors font-label"
                       >
-                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
-                        </svg>
+                        <span className="material-symbols-outlined text-on-surface-variant text-[20px]">{item.icon}</span>
                         {item.label}
                       </Link>
                     ))}
                   </div>
 
-                  <div className="border-t border-gray-100 dark:border-gray-700 py-1">
-                    <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 w-full cursor-pointer transition-colors">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                      Logout
+                  <div className="border-t border-outline-variant/10 py-2">
+                    <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 text-sm text-error hover:bg-error-container/30 w-full cursor-pointer transition-colors font-label">
+                      <span className="material-symbols-outlined text-[20px]">logout</span>
+                      Sign Out
                     </button>
                   </div>
                 </div>
               )}
             </div>
           ) : (
-            <Link to="/login" className="text-gray-600 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 cursor-pointer flex items-center gap-1.5 transition-colors">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-              <span className="text-sm font-medium hidden sm:block">Login</span>
+            <Link to="/login" className="hidden sm:flex items-center gap-2 text-primary hover:text-secondary cursor-pointer transition-colors">
+              <span className="material-symbols-outlined text-[22px]">person</span>
+              <span className="text-sm font-headline font-semibold">Login</span>
             </Link>
           )}
 
-          {/* cart */}
-          <button onClick={() => setSidebarOpen(true)} className="relative flex items-center gap-1.5 sm:gap-2 bg-green-600 hover:bg-green-700 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl cursor-pointer transition-all btn-press shadow-sm">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
-            </svg>
-            {cartCount > 0 ? (
-              <span className="text-white text-xs sm:text-sm font-bold">{cartCount}</span>
-            ) : (
-              <span className="text-white/90 text-xs sm:text-sm hidden sm:block">Cart</span>
-            )}
+          {/* Cart button */}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="relative cursor-pointer hover:opacity-80 transition-all active:scale-95 duration-200"
+          >
+            <span className="material-symbols-outlined text-primary text-[26px]">shopping_bag</span>
             {cartCount > 0 && (
-              <span className={`absolute -top-1.5 -right-1.5 bg-yellow-400 text-green-900 text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-[0_2px_10px_rgba(250,204,21,0.5)] ${cartBounce ? "animate-cart-bounce" : ""}`}>
+              <span className={`absolute -top-1.5 -right-1.5 bg-secondary-container text-on-secondary-container text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-sm ${cartBounce ? "animate-cart-bounce" : ""}`}>
                 {cartCount}
               </span>
             )}
@@ -191,26 +191,29 @@ export default function Header() {
 
       {/* Mobile search bar */}
       {showMobileSearch && (
-        <div className="sm:hidden px-3 pb-2.5 animate-slide-down">
-          <form onSubmit={handleSearch} className="flex bg-gray-100 dark:bg-gray-800 rounded-xl overflow-hidden ring-1 ring-gray-200/60 dark:ring-gray-700">
+        <div className="md:hidden px-4 pb-3 animate-slide-down">
+          <form onSubmit={handleSearch} className="relative">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface/40 text-[18px]">search</span>
             <input
               ref={mobileSearchRef}
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search products..."
-              className="flex-1 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 bg-transparent focus:outline-none min-w-0"
+              placeholder='Search "dal, momo, milk..."'
+              className="w-full bg-white/70 dark:bg-white/[0.06] border border-outline-variant/20 rounded-full pl-9 pr-20 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary/50 focus:bg-white focus:shadow-[0_0_0_3px_rgba(26,59,30,0.08)] transition-all font-label placeholder:text-on-surface/35"
             />
-            <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2.5 text-sm cursor-pointer shrink-0 transition-all">
-              Search
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowMobileSearch(false)}
-              className="px-3 text-gray-400 hover:text-gray-600 cursor-pointer transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
+            <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+              <button type="submit" className="bg-primary hover:bg-on-surface text-white font-label font-bold text-[10px] px-3 py-1.5 rounded-full cursor-pointer transition-all uppercase tracking-widest shadow-[0_2px_6px_rgba(0,0,0,0.25),0_1px_2px_rgba(0,0,0,0.2)]">
+                Go
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowMobileSearch(false)}
+                className="p-1 rounded-full hover:bg-surface-container-high cursor-pointer transition-colors"
+              >
+                <span className="material-symbols-outlined text-on-surface-variant/50 text-[18px]">close</span>
+              </button>
+            </div>
           </form>
         </div>
       )}
