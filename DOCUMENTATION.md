@@ -739,17 +739,17 @@ After success: clears cart (localStorage), closes modal, shows success screen.
 
 ---
 
-## 13. AI Chatbot (Ollama + DeepSeek R1)
+## 13. AI Chatbot (Ollama + Llama 3.1)
 
 ### Overview
 
-VintunaStore includes an AI-powered shopping assistant chatbot running **DeepSeek R1 7B** locally via **Ollama**. No API key, no cloud service, no cost — runs entirely on the developer's machine. The chatbot helps customers find products, check prices, and get store information using real product data from MongoDB.
+VintunaStore includes an AI-powered shopping assistant chatbot running **Llama 3.1 8B** locally via **Ollama**. No API key, no cloud service, no cost — runs entirely on the developer's machine. The chatbot helps customers find products, check prices, and get store information using real product data from MongoDB.
 
 ### How It Works — Step by Step
 
 ```
 CUSTOMER                    BACKEND (port 5000)              OLLAMA (port 11434)
-   |                           |                               DeepSeek R1 7B
+   |                           |                               Llama 3.1 8B
    |  "show me spices          |                               |
    |   under Rs.200"           |                               |
    | ────────────────────────> |                               |
@@ -792,8 +792,8 @@ CUSTOMER                    BACKEND (port 5000)              OLLAMA (port 11434)
 # Install Ollama
 curl -fsSL https://ollama.com/install.sh | sh
 
-# Pull DeepSeek R1 7B (~4.7GB)
-ollama pull deepseek-r1:7b
+# Pull Llama 3.1 8B (~4.9GB)
+ollama pull llama3.1:8b
 
 # Ollama auto-starts as a service, or run manually:
 ollama serve
@@ -807,7 +807,7 @@ Ollama must be running at `http://localhost:11434` before starting the backend.
 2. **Real data only** — AI only recommends products that exist in MongoDB
 3. **No auth required** — Guests can chat too
 4. **Conversation memory** — Full chat history sent each request
-5. **Thinking cleanup** — DeepSeek R1 outputs `<think>...</think>` reasoning tags; the controller strips these before returning the response
+5. **Thinking cleanup** — If using a reasoning model (DeepSeek R1), the controller strips `<think>...</think>` tags before returning the response
 6. **60-second timeout** — Prevents hanging if model is slow; returns friendly error
 7. **Fallback** — If no products match query, sends 10 newest products as context
 
@@ -846,10 +846,10 @@ Response: {
 No API key needed. Just ensure Ollama is running:
 ```bash
 ollama serve        # if not running as system service
-ollama list         # verify deepseek-r1:7b is available
+ollama list         # verify llama3.1:8b is available
 ```
 
-The controller connects to `http://localhost:11434/api/chat` using the `deepseek-r1:7b` model. To change the model, edit `MODEL` constant in `chat.controller.js`.
+The controller connects to `http://localhost:11434/api/chat` using the `llama3.1:8b` model. To change the model, edit `MODEL` constant in `chat.controller.js`.
 
 ### System Prompt
 
@@ -875,8 +875,8 @@ The AI is instructed to:
 
 ### Limitations
 
-- **First response is slow** — DeepSeek R1 7B needs ~10-30 seconds for the first response while the model loads into memory. Subsequent responses are faster (~3-10s).
-- **Hardware dependent** — Needs ~5GB RAM for the 7B model. If your machine is slow, use `deepseek-r1:1.5b` instead (change `MODEL` in controller).
+- **First response is slow** — Llama 3.1 8B needs ~5-15 seconds for the first response while the model loads into memory. Subsequent responses are faster (~2-5s).
+- **Hardware dependent** — Needs ~5GB RAM for the 8B model. If your machine is slow, use `llama3.2:3b` instead (change `MODEL` in controller).
 - **No streaming** — Waits for full response before displaying.
 - **No persistent history** — Conversation resets on page refresh.
 - **Context window** — Sends up to 15 matching products. Very large catalogs may miss some results.

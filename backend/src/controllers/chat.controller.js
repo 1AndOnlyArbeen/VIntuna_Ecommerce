@@ -20,7 +20,7 @@ import { apiResponse } from "../utils/apiResponse.js";
 // ──────────────────────────────────────────────
 
 const OLLAMA_URL = "http://localhost:11434/api/chat";
-const MODEL = "deepseek-r1:7b";
+const MODEL = "llama3.1:8b";
 
 const sendMessage = asyncHandler(async (req, res) => {
     const { message, history = [] } = req.body;

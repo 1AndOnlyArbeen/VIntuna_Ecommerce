@@ -54,11 +54,14 @@ export default function ChatWidget() {
 
       setMessages(prev => [...prev, { role: "model", text: reply }])
     } catch (err) {
+      const msg = err.message || ""
       setMessages(prev => [...prev, {
         role: "model",
-        text: err.message?.includes("API key")
-          ? "AI is not configured yet. Please add your Gemini API key."
-          : "Sorry, something went wrong. Please try again!",
+        text: msg.includes("timed out") || msg.includes("timeout")
+          ? "AI is taking too long. Please try a shorter question."
+          : msg.includes("offline") || msg.includes("503")
+            ? "AI service is not running. Make sure Ollama is started."
+            : `Sorry, something went wrong: ${msg}`,
       }])
     } finally {
       setLoading(false)
