@@ -739,17 +739,17 @@ After success: clears cart (localStorage), closes modal, shows success screen.
 
 ---
 
-## 13. AI Chatbot (Gemini Integration)
+## 13. AI Chatbot (Ollama + DeepSeek R1)
 
 ### Overview
 
-VintunaStore includes an AI-powered shopping assistant chatbot built with Google's **Gemini 2.0 Flash** model (free tier). The chatbot helps customers find products, check prices, and get store information using real product data from the MongoDB database.
+VintunaStore includes an AI-powered shopping assistant chatbot running **DeepSeek R1 7B** locally via **Ollama**. No API key, no cloud service, no cost — runs entirely on the developer's machine. The chatbot helps customers find products, check prices, and get store information using real product data from MongoDB.
 
 ### How It Works — Step by Step
 
 ```
-CUSTOMER                    BACKEND                         GEMINI AI
-   |                           |                               |
+CUSTOMER                    BACKEND (port 5000)              OLLAMA (port 11434)
+   |                           |                               DeepSeek R1 7B
    |  "show me spices          |                               |
    |   under Rs.200"           |                               |
    | ────────────────────────> |                               |
@@ -766,44 +766,58 @@ CUSTOMER                    BACKEND                         GEMINI AI
    |                    3. Found: Timur Rs.180,                |
    |                       Jimbu Rs.250, Haldi Rs.120          |
    |                           |                               |
-   |                    4. Build prompt:                        |
-   |                       "You are VintunaStore assistant.    |
-   |                        Here are matching products:        |
-   |                        - Timur Rs.180                     |
-   |                        - Haldi Rs.120                     |
-   |                        Customer asks: show me spices      |
-   |                        under Rs.200"                      |
+   |                    4. Build system prompt +                |
+   |                       product context                     |
    |                           |                               |
+   |                           |  POST localhost:11434/api/chat|
    |                           | ───────────────────────────> |
    |                           |                               |
-   |                           |     5. Gemini generates       |
+   |                           |     5. DeepSeek generates     |
    |                           |        response using         |
    |                           |        REAL product data      |
    |                           |                               |
    |                           | <─────────────────────────── |
    |                           |                               |
+   |                    6. Clean <think> tags                   |
+   |                           |                               |
    |  "We have Timur            |                               |
    |   (Rs.180) and Haldi      |                               |
-   |   (Rs.120) in spices      |                               |
-   |   under Rs.200!"          |                               |
+   |   (Rs.120) under Rs.200!" |                               |
    | <──────────────────────── |                               |
 ```
 
+### Prerequisites
+
+```bash
+# Install Ollama
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Pull DeepSeek R1 7B (~4.7GB)
+ollama pull deepseek-r1:7b
+
+# Ollama auto-starts as a service, or run manually:
+ollama serve
+```
+
+Ollama must be running at `http://localhost:11434` before starting the backend.
+
 ### Key Design Decisions
 
-1. **Real data only** — AI never makes up products. It only recommends what exists in MongoDB.
-2. **No auth required** — Guests can chat too (helps convert browsers to buyers).
-3. **Conversation memory** — Full chat history is sent each time so the AI remembers context ("show me cheaper ones" works after an initial query).
-4. **Fallback behavior** — If no products match the query, the AI gets the 10 newest products to still be helpful.
-5. **Free tier** — Uses Gemini 2.0 Flash which is free (15 req/min limit from Google).
+1. **Fully local** — No cloud API, no API key, no cost, no rate limits, no data leaves the machine
+2. **Real data only** — AI only recommends products that exist in MongoDB
+3. **No auth required** — Guests can chat too
+4. **Conversation memory** — Full chat history sent each request
+5. **Thinking cleanup** — DeepSeek R1 outputs `<think>...</think>` reasoning tags; the controller strips these before returning the response
+6. **60-second timeout** — Prevents hanging if model is slow; returns friendly error
+7. **Fallback** — If no products match query, sends 10 newest products as context
 
-### Files Added
+### Files
 
 | File | Purpose |
 |---|---|
-| `backend/src/controllers/chat.controller.js` | Core logic: searches MongoDB, builds prompt, calls Gemini API |
-| `backend/src/routes/chat.route.js` | `POST /api/v1/chat` (no auth required) |
-| `frontend/src/components/ChatWidget.jsx` | Floating chat bubble + chat panel UI |
+| `backend/src/controllers/chat.controller.js` | Searches MongoDB, builds prompt, calls Ollama API via `fetch`, cleans `<think>` tags |
+| `backend/src/routes/chat.route.js` | `POST /api/v1/chat` (public, no auth) |
+| `frontend/src/components/ChatWidget.jsx` | Floating brown chat bubble + chat panel UI |
 | `frontend/src/api.js` → `sendChatMessageAPI()` | API function for chat |
 
 ### API Endpoint
@@ -829,12 +843,13 @@ Response: {
 
 ### Environment Setup
 
-1. Go to https://aistudio.google.com/apikey
-2. Click "Get API Key" (free, no credit card)
-3. Add to `backend/.env`:
-   ```
-   GEMINI_API_KEY=your_actual_key_here
-   ```
+No API key needed. Just ensure Ollama is running:
+```bash
+ollama serve        # if not running as system service
+ollama list         # verify deepseek-r1:7b is available
+```
+
+The controller connects to `http://localhost:11434/api/chat` using the `deepseek-r1:7b` model. To change the model, edit `MODEL` constant in `chat.controller.js`.
 
 ### System Prompt
 
@@ -846,11 +861,13 @@ The AI is instructed to:
 - Know that delivery is free above Rs.200
 - Know that payment is COD only
 - Keep responses short (2-3 sentences unless listing products)
+- Not include thinking/reasoning in its response
 
 ### Frontend Component (ChatWidget.jsx)
 
-- **Floating button** — bottom-right corner, green with robot icon, pulses to attract attention
+- **Floating button** — bottom-right corner, brown (`#7f5700`) with robot icon
 - **Chat panel** — 340px wide, max 520px tall, slides in with scale animation
+- **Chat header** — brown gradient matching the button
 - **Messages** — user messages (right, dark green), AI messages (left, gray)
 - **Typing indicator** — 3 bouncing dots while waiting for AI
 - **Auto-scroll** — scrolls to latest message automatically
@@ -858,10 +875,12 @@ The AI is instructed to:
 
 ### Limitations
 
-- **Rate limit** — Gemini free tier allows 15 requests/minute. Heavy traffic would need a paid plan.
-- **No streaming** — Waits for full response before displaying (could add streaming for better UX later).
-- **No persistent history** — Conversation resets on page refresh (stored in component state only).
+- **First response is slow** — DeepSeek R1 7B needs ~10-30 seconds for the first response while the model loads into memory. Subsequent responses are faster (~3-10s).
+- **Hardware dependent** — Needs ~5GB RAM for the 7B model. If your machine is slow, use `deepseek-r1:1.5b` instead (change `MODEL` in controller).
+- **No streaming** — Waits for full response before displaying.
+- **No persistent history** — Conversation resets on page refresh.
 - **Context window** — Sends up to 15 matching products. Very large catalogs may miss some results.
+- **Must run Ollama** — Chatbot won't work if Ollama service isn't running.
 
 ---
 
