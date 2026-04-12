@@ -19,12 +19,13 @@ export default function SearchResults() {
   const [loading, setLoading] = useState(true)
   const [selectedCat, setSelectedCat] = useState("All")
   const [sortBy, setSortBy] = useState("featured")
-  const [priceRange, setPriceRange] = useState(10000)
+  const [priceRange, setPriceRange] = useState(0)
+  const [priceInited, setPriceInited] = useState(false)
   const [sidebarSearch, setSidebarSearch] = useState("")
   const [showMobileFilters, setShowMobileFilters] = useState(false)
 
   useEffect(() => {
-    setPage(1); setSelectedCat("All"); setSortBy("featured"); setPriceRange(10000); setSidebarSearch("")
+    setPage(1); setSelectedCat("All"); setSortBy("featured"); setPriceRange(0); setPriceInited(false); setSidebarSearch("")
     async function search() {
       setLoading(true)
       try {
@@ -44,7 +45,15 @@ export default function SearchResults() {
     return Object.entries(counts).sort((a, b) => b[1] - a[1])
   }, [results])
 
-  const maxPrice = useMemo(() => Math.max(...results.map(p => p.originalPrice || p.price), 500), [results])
+  const maxPrice = useMemo(() => results.length > 0 ? Math.max(...results.map(p => p.originalPrice || p.price)) : 500, [results])
+  const minPrice = useMemo(() => results.length > 0 ? Math.min(...results.map(p => p.price)) : 0, [results])
+
+  useEffect(() => {
+    if (results.length > 0 && !priceInited) {
+      setPriceRange(maxPrice)
+      setPriceInited(true)
+    }
+  }, [results, maxPrice, priceInited])
 
   // Filtered + sorted
   const filtered = useMemo(() => {
@@ -53,7 +62,7 @@ export default function SearchResults() {
       const q = sidebarSearch.toLowerCase()
       r = r.filter(p => p.name.toLowerCase().includes(q))
     }
-    r = r.filter(p => p.price <= priceRange)
+    if (priceRange > 0) r = r.filter(p => p.price <= priceRange)
     if (sortBy === "price-asc") r.sort((a, b) => a.price - b.price)
     else if (sortBy === "price-desc") r.sort((a, b) => b.price - a.price)
     return r
@@ -64,7 +73,7 @@ export default function SearchResults() {
   const visible = filtered.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE)
 
   function clearFilters() {
-    setSelectedCat("All"); setSortBy("featured"); setPriceRange(10000); setSidebarSearch(""); setPage(1)
+    setSelectedCat("All"); setSortBy("featured"); setPriceRange(maxPrice); setSidebarSearch(""); setPage(1)
   }
 
   const sidebarContent = (
@@ -99,14 +108,19 @@ export default function SearchResults() {
       <section>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-[11px] font-label font-bold uppercase tracking-widest text-on-surface/60">Price Range</h3>
-          <span className="text-[12px] font-label font-bold text-on-surface">Rs.{priceRange}</span>
+          <span className="text-[12px] font-label font-bold text-primary">Up to Rs.{priceRange || maxPrice}</span>
         </div>
         <div className="bg-[#e5e4e2]/70 dark:bg-white/[0.06] rounded-xl p-3">
-          <input className="w-full h-1.5 bg-[#d5d4d2] dark:bg-white/[0.1] appearance-none cursor-pointer accent-primary rounded-full" type="range" min="0" max={maxPrice} step="10" value={priceRange} onChange={e => { setPriceRange(Number(e.target.value)); setPage(1) }} />
+          <input className="w-full h-1.5 bg-[#d5d4d2] dark:bg-white/[0.1] appearance-none cursor-pointer accent-primary rounded-full" type="range" min={minPrice} max={maxPrice} step={maxPrice > 500 ? 10 : 5} value={priceRange || maxPrice} onChange={e => { setPriceRange(Number(e.target.value)); setPage(1) }} />
           <div className="flex justify-between mt-2">
-            <span className="text-[10px] font-label text-on-surface/50">Rs.0</span>
+            <span className="text-[10px] font-label text-on-surface/50">Rs.{minPrice}</span>
             <span className="text-[10px] font-label text-on-surface/50">Rs.{maxPrice}</span>
           </div>
+          {priceRange > 0 && priceRange < maxPrice && (
+            <p className="text-[10px] font-label text-primary font-semibold mt-2 text-center">
+              Showing products up to Rs.{priceRange}
+            </p>
+          )}
         </div>
       </section>
 

@@ -13,7 +13,7 @@ const SORT_OPTIONS = [
   { value: "newest", label: "Newest Arrival" },
 ]
 
-const TAG_OPTIONS = ["Best Seller", "Popular Now", "Healthy", "Organic", "New Arrival", "Limited"]
+// Tags are derived dynamically from products loaded from the backend
 
 export default function Home() {
   const [selectedCat, setSelectedCat] = useState("All")
@@ -25,7 +25,8 @@ export default function Home() {
   const [slide, setSlide] = useState(0)
   const [sortBy, setSortBy] = useState("featured")
   const [sidebarSearch, setSidebarSearch] = useState("")
-  const [priceRange, setPriceRange] = useState(10000)
+  const [priceRange, setPriceRange] = useState(0)
+  const [priceInited, setPriceInited] = useState(false)
   const [selectedTag, setSelectedTag] = useState("")
   const [showMobileFilters, setShowMobileFilters] = useState(false)
   const timerRef = useRef(null)
@@ -71,6 +72,15 @@ export default function Home() {
     return counts
   }, [products])
 
+  // Dynamic tags from products
+  const TAG_OPTIONS = useMemo(() => {
+    const tagSet = new Set()
+    products.forEach(p => {
+      if (Array.isArray(p.tags)) p.tags.forEach(t => tagSet.add(t))
+    })
+    return [...tagSet]
+  }, [products])
+
   // Filtered + sorted products
   const filtered = useMemo(() => {
     let result = selectedCat === "All" ? [...products] : products.filter(p => p.category === selectedCat)
@@ -80,7 +90,7 @@ export default function Home() {
       result = result.filter(p => p.name.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q))
     }
 
-    result = result.filter(p => p.price <= priceRange)
+    if (priceRange > 0) result = result.filter(p => p.price <= priceRange)
 
     if (selectedTag) {
       result = result.filter(p => Array.isArray(p.tags) && p.tags.includes(selectedTag))
@@ -101,13 +111,29 @@ export default function Home() {
   function clearFilters() {
     setSelectedCat("All")
     setSidebarSearch("")
-    setPriceRange(10000)
+    setPriceRange(maxPrice)
     setSelectedTag("")
     setSortBy("featured")
     setPage(1)
   }
 
-  const maxPrice = useMemo(() => Math.max(...products.map(p => p.originalPrice || p.price), 1000), [products])
+  const maxPrice = useMemo(() => {
+    if (products.length === 0) return 1000
+    return Math.max(...products.map(p => p.originalPrice || p.price))
+  }, [products])
+
+  // Set priceRange to maxPrice once products load
+  useEffect(() => {
+    if (products.length > 0 && !priceInited) {
+      setPriceRange(maxPrice)
+      setPriceInited(true)
+    }
+  }, [products, maxPrice, priceInited])
+
+  const minPrice = useMemo(() => {
+    if (products.length === 0) return 0
+    return Math.min(...products.map(p => p.price))
+  }, [products])
 
   // Sidebar content (shared between desktop and mobile)
   const sidebarContent = (
@@ -178,22 +204,27 @@ export default function Home() {
       <section>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-[11px] font-label font-bold uppercase tracking-widest text-on-surface/60">Price Range</h3>
-          <span className="text-[12px] font-label font-bold text-on-surface">Rs.{priceRange}</span>
+          <span className="text-[12px] font-label font-bold text-primary">Up to Rs.{priceRange}</span>
         </div>
         <div className="bg-[#e5e4e2]/70 dark:bg-white/[0.06] rounded-xl p-3">
           <input
             className="w-full h-1.5 bg-[#d5d4d2] dark:bg-white/[0.1] appearance-none cursor-pointer accent-primary rounded-full"
             type="range"
-            min="0"
+            min={minPrice}
             max={maxPrice}
-            step="10"
-            value={priceRange}
+            step={maxPrice > 500 ? 10 : 5}
+            value={priceRange || maxPrice}
             onChange={e => { setPriceRange(Number(e.target.value)); setPage(1) }}
           />
           <div className="flex justify-between mt-2">
-            <span className="text-[10px] font-label text-on-surface/50">Rs.0</span>
+            <span className="text-[10px] font-label text-on-surface/50">Rs.{minPrice}</span>
             <span className="text-[10px] font-label text-on-surface/50">Rs.{maxPrice}</span>
           </div>
+          {priceRange < maxPrice && (
+            <p className="text-[10px] font-label text-primary font-semibold mt-2 text-center">
+              Showing products up to Rs.{priceRange}
+            </p>
+          )}
         </div>
       </section>
 

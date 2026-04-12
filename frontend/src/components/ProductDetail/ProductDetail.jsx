@@ -27,19 +27,26 @@ export default function ProductDetail() {
   async function fetchReviews(pid) {
     try {
       const res = await getProductReviewsAPI(pid)
-      const data = res.data
-      setReviews(data)
+      const d = res.data
+      // Backend returns: { data: [...reviews], total, avgRating, totalReviews, breakdown: {5:n, 4:n, ...} }
+      const reviewList = d?.data || []
+      setReviews(reviewList)
 
-      // Calculate stats from reviews
-      const totalReviews = data.length
-      const avgRating = totalReviews > 0
-        ? (data.reduce((sum, r) => sum + r.rating, 0) / totalReviews).toFixed(1)
-        : 0
-      const breakdown = [5, 4, 3, 2, 1].map(star => {
-        const count = data.filter(r => r.rating === star).length
-        return { star, count, pct: totalReviews > 0 ? Math.round((count / totalReviews) * 100) : 0 }
-      })
-      setReviewStats({ avgRating: Number(avgRating), totalReviews, breakdown })
+      if (d?.totalReviews !== undefined) {
+        const bd = d.breakdown || {}
+        const total = d.totalReviews || 1
+        setReviewStats({
+          avgRating: d.avgRating || 0,
+          totalReviews: d.totalReviews,
+          breakdown: [5, 4, 3, 2, 1].map(star => ({
+            star,
+            count: bd[star] || 0,
+            pct: Math.round(((bd[star] || 0) / total) * 100),
+          })),
+        })
+      } else {
+        setReviewStats(null)
+      }
     } catch {
       setReviews([])
       setReviewStats(null)
@@ -122,6 +129,10 @@ export default function ProductDetail() {
   const tags = Array.isArray(product.tags) ? product.tags : []
   const imgSrc = Array.isArray(product.image) ? product.image : [product.image]
   const productImages = imgSrc.length > 0 ? imgSrc : ["https://placehold.co/400x400/e9e8e6/1a1c1b?text=No+Image"]
+
+  // Format product for CartContext (needs .id and flat .image string)
+  const firstImage = imgSrc[0] || ""
+  const cartProduct = { ...product, id: pid, image: firstImage }
 
   const displayAvgRating = reviewStats ? reviewStats.avgRating : 0
   const displayTotalReviews = reviewStats ? reviewStats.totalReviews : 0
@@ -226,37 +237,36 @@ export default function ProductDetail() {
                     {tags.map(tag => (
                       <span key={tag} className="text-[10px] font-label bg-surface-container-high/60 text-on-surface-variant px-2 py-0.5 rounded">{tag}</span>
                     ))}
-                    <span className="text-[10px] font-label bg-surface-container-high/60 text-on-surface-variant px-2 py-0.5 rounded">{product.category}</span>
                   </div>
                 </div>
               )}
 
               {/* Quantity + Add to cart + Buy now */}
               <div className="flex items-center gap-2 sm:gap-3">
-                {qty > 0 ? (
-                  <div className="flex items-center border border-outline-variant/20 rounded-lg">
-                    <button onClick={() => decreaseQty(pid)} className="px-3 py-2 text-on-surface-variant cursor-pointer hover:text-primary transition-colors font-bold">
-                      {qty === 1 ? <span className="material-symbols-outlined text-[16px]">delete</span> : "−"}
-                    </button>
-                    <span className="px-3 py-2 font-headline font-bold text-sm text-primary min-w-[32px] text-center">{qty}</span>
-                    <button onClick={() => increaseQty(pid)} className="px-3 py-2 text-on-surface-variant cursor-pointer hover:text-primary transition-colors font-bold">+</button>
-                  </div>
-                ) : (
-                  <div className="flex items-center border border-outline-variant/20 rounded-lg">
-                    <span className="px-3 py-2 text-on-surface-variant/40 font-bold">−</span>
-                    <span className="px-3 py-2 font-headline font-bold text-sm text-primary">0</span>
-                    <span className="px-3 py-2 text-on-surface-variant/40 font-bold">+</span>
-                  </div>
-                )}
+                <div className="flex items-center border border-outline-variant/20 rounded-lg">
+                  <button
+                    onClick={() => qty > 0 ? decreaseQty(pid) : null}
+                    disabled={qty === 0 || product.inStock === false}
+                    className="px-3 py-2 text-on-surface-variant cursor-pointer hover:text-primary transition-colors font-bold disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    {qty === 1 ? <span className="material-symbols-outlined text-[16px]">delete</span> : "−"}
+                  </button>
+                  <span className="px-3 py-2 font-headline font-bold text-sm text-primary min-w-[32px] text-center">{qty}</span>
+                  <button
+                    onClick={() => qty > 0 ? increaseQty(pid) : addToCart(cartProduct)}
+                    disabled={product.inStock === false}
+                    className="px-3 py-2 text-on-surface-variant cursor-pointer hover:text-primary transition-colors font-bold disabled:opacity-30 disabled:cursor-not-allowed"
+                  >+</button>
+                </div>
                 <button
-                  onClick={() => qty === 0 ? addToCart(product) : null}
+                  onClick={() => addToCart(cartProduct)}
                   disabled={product.inStock === false}
                   className="flex-1 bg-velvet-gradient text-on-primary py-3 rounded-lg text-xs font-headline font-bold uppercase tracking-wide cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.98] transition-all"
                 >
-                  Add To Cart
+                  {qty > 0 ? `In Cart (${qty})` : "Add To Cart"}
                 </button>
                 <button
-                  onClick={() => { addToCart(product); navigate("/cart") }}
+                  onClick={() => { addToCart(cartProduct); navigate("/cart") }}
                   disabled={product.inStock === false}
                   className="bg-secondary-container text-on-secondary-container py-3 px-4 sm:px-6 rounded-lg text-xs font-headline font-bold uppercase tracking-wide cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.98] transition-all"
                 >
