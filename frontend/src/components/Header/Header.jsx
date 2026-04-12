@@ -57,29 +57,14 @@ export default function Header() {
 
   return (
     <header className="fixed top-0 w-full z-50 bg-[#ededeb]/80 dark:bg-[#151a27]/80 backdrop-blur-2xl backdrop-saturate-150 border-b border-black/8 shadow-[0_2px_8px_rgba(0,0,0,0.12),0_6px_28px_rgba(0,0,0,0.10),0_0_0_1px_rgba(0,0,0,0.04)]">
-      <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12 py-4 flex items-center justify-between gap-4">
+      <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12 py-5 flex items-center justify-between gap-4">
 
-        {/* Logo */}
-        <div className="flex items-center gap-6 lg:gap-10">
-          <Link to="/" className="shrink-0 hover:opacity-80 transition-opacity flex items-center gap-2">
-            <img src={logo} alt="VintunaStore" className="h-8 sm:h-10 object-contain" />
-          </Link>
+        {/* Logo — bigger */}
+        <Link to="/" className="shrink-0 hover:opacity-80 transition-opacity flex items-center gap-2">
+          <img src={logo} alt="VintunaStore" className="h-12 sm:h-14 object-contain" />
+        </Link>
 
-          {/* Desktop nav links */}
-          <nav className="hidden lg:flex items-center gap-8">
-            <Link to="/" className="font-headline font-semibold text-primary tracking-tight hover:text-secondary transition-colors duration-300">
-              Shop
-            </Link>
-            <Link to="/search?q=Nepali" className="font-headline font-semibold text-primary/60 tracking-tight hover:text-secondary transition-colors duration-300">
-              Categories
-            </Link>
-            <Link to="/contact" className="font-headline font-semibold text-primary/60 tracking-tight hover:text-secondary transition-colors duration-300">
-              Contact
-            </Link>
-          </nav>
-        </div>
-
-        {/* Desktop search */}
+        {/* Desktop search — center */}
         <form onSubmit={handleSearch} className="flex-1 max-w-xl hidden md:flex">
           <div className="relative w-full">
             <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface/40 text-[20px]">search</span>
@@ -96,8 +81,24 @@ export default function Header() {
           </div>
         </form>
 
-        {/* Right actions */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        {/* Right side — nav links + actions */}
+        <div className="flex items-center gap-4 sm:gap-6">
+          {/* Desktop nav links */}
+          <nav className="hidden lg:flex items-center gap-6">
+            <Link to="/" className="font-headline font-semibold text-primary tracking-tight hover:text-secondary transition-colors duration-300 text-sm">
+              Shop
+            </Link>
+            <Link to="/search?q=Nepali" className="font-headline font-semibold text-primary/60 tracking-tight hover:text-secondary transition-colors duration-300 text-sm">
+              Categories
+            </Link>
+            <Link to="/contact" className="font-headline font-semibold text-primary/60 tracking-tight hover:text-secondary transition-colors duration-300 text-sm">
+              Contact
+            </Link>
+          </nav>
+
+          {/* Divider */}
+          <div className="hidden lg:block w-px h-6 bg-outline-variant/20" />
+
           {/* Mobile search toggle */}
           <button
             onClick={() => setShowMobileSearch(!showMobileSearch)}
@@ -113,9 +114,9 @@ export default function Header() {
             <div className="relative" ref={dropdownRef}>
               <button onClick={() => setShowDropdown(!showDropdown)} className="flex items-center gap-2 cursor-pointer group">
                 {user.avatar ? (
-                  <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover ring-2 ring-primary-container group-hover:ring-secondary transition-colors" />
+                  <img src={user.avatar} alt={user.name} className="w-9 h-9 rounded-full object-cover ring-2 ring-primary-container group-hover:ring-secondary transition-colors" />
                 ) : (
-                  <div className="w-8 h-8 bg-primary-container group-hover:bg-primary text-on-primary-container group-hover:text-on-primary rounded-full flex items-center justify-center text-xs font-bold transition-colors">
+                  <div className="w-9 h-9 bg-primary-container group-hover:bg-primary text-on-primary-container group-hover:text-on-primary rounded-full flex items-center justify-center text-sm font-bold transition-colors">
                     {user.name?.charAt(0).toUpperCase() || "U"}
                   </div>
                 )}
@@ -156,6 +157,16 @@ export default function Header() {
                         {item.label}
                       </Link>
                     ))}
+                    {user.role === "ADMIN" && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setShowDropdown(false)}
+                        className="flex items-center gap-3 px-4 py-3 text-sm text-secondary hover:bg-surface-container-high cursor-pointer transition-colors font-label font-bold"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+                        Admin Panel
+                      </Link>
+                    )}
                   </div>
 
                   <div className="border-t border-outline-variant/10 py-2">

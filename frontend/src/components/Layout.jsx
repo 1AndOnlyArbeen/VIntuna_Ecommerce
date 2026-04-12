@@ -9,7 +9,7 @@ export default function Layout() {
   return (
     <div className="flex flex-col min-h-screen bg-surface">
       <Header />
-      <main className="flex-1 pt-[72px] pb-20 md:pb-0">
+      <main className="flex-1 pt-[88px] pb-20 md:pb-0">
         <Outlet />
       </main>
       <Footer />
