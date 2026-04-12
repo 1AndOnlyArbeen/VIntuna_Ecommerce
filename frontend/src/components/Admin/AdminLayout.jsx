@@ -10,7 +10,10 @@ const navItems = [
   { to: "/admin/banners", label: "Banners", icon: "image" },
   { to: "/admin/featured", label: "Featured", icon: "star" },
   { to: "/admin/categories", label: "Categories", icon: "category" },
+  { to: "/admin/orders", label: "Orders", icon: "receipt_long" },
   { to: "/admin/discounts", label: "Discounts", icon: "sell" },
+  { to: "/admin/reviews", label: "Reviews", icon: "rate_review" },
+  { to: "/admin/contacts", label: "Contacts", icon: "mail" },
   { to: "/admin/profile", label: "Profile", icon: "person" },
 ]
 

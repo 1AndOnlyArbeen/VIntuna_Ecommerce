@@ -1,23 +1,50 @@
-import { useState, useEffect } from "react"
-import { useParams, Link } from "react-router-dom"
-import { getProductByIdAPI, getProductsAPI } from "../../api"
-import { products as mockProducts } from "../../data/products"
+import { useState, useEffect, useContext } from "react"
+import { useParams, Link, useNavigate } from "react-router-dom"
+import { getProductByIdAPI, getProductsAPI, getProductReviewsAPI, createReviewAPI } from "../../api"
 import { useCart } from "../../context/CartContext"
+import UserContext from "../../context/UserContext"
 import ProductCard from "../ProductCard/ProductCard"
-
-const REVIEWS = [
-  { id: 1, name: "Aarav Sharma", verified: true, rating: 5, time: "1 month ago", title: "Amazing Quality — Highly Recommend!", body: "I've been ordering from VintunaStore for a few weeks now, and the quality is consistently great. The products are always fresh and the delivery is super quick. Definitely worth it!", avatar: null },
-  { id: 2, name: "Sita Thapa", verified: true, rating: 4, time: "2 months ago", title: "Great Product, Fast Delivery!", body: "I bought this for my family and everyone loved it. The taste is authentic and the packaging was excellent. Will order again for sure.", avatar: null },
-]
 
 export default function ProductDetail() {
   const { productId } = useParams()
+  const navigate = useNavigate()
   const { addToCart, increaseQty, decreaseQty, getItemQty } = useCart()
+  const { user } = useContext(UserContext)
   const [product, setProduct] = useState(null)
   const [similarProducts, setSimilarProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("review")
   const [mainImage, setMainImage] = useState(0)
+
+  // Review state
+  const [reviews, setReviews] = useState([])
+  const [reviewStats, setReviewStats] = useState(null)
+  const [reviewForm, setReviewForm] = useState({ rating: 5, title: "", body: "" })
+  const [reviewLoading, setReviewLoading] = useState(false)
+  const [reviewError, setReviewError] = useState("")
+  const [reviewSuccess, setReviewSuccess] = useState("")
+
+  async function fetchReviews(pid) {
+    try {
+      const res = await getProductReviewsAPI(pid)
+      const data = res.data
+      setReviews(data)
+
+      // Calculate stats from reviews
+      const totalReviews = data.length
+      const avgRating = totalReviews > 0
+        ? (data.reduce((sum, r) => sum + r.rating, 0) / totalReviews).toFixed(1)
+        : 0
+      const breakdown = [5, 4, 3, 2, 1].map(star => {
+        const count = data.filter(r => r.rating === star).length
+        return { star, count, pct: totalReviews > 0 ? Math.round((count / totalReviews) * 100) : 0 }
+      })
+      setReviewStats({ avgRating: Number(avgRating), totalReviews, breakdown })
+    } catch {
+      setReviews([])
+      setReviewStats(null)
+    }
+  }
 
   useEffect(() => {
     async function fetchProduct() {
@@ -25,17 +52,34 @@ export default function ProductDetail() {
       try {
         const res = await getProductByIdAPI(productId)
         setProduct(res.data)
+        await fetchReviews(productId)
         const allRes = await getProductsAPI({ category: res.data.category })
-        setSimilarProducts((allRes.data || []).filter(p => (p._id || p.id) !== (res.data._id || res.data.id)).slice(0, 4))
+        const allProds = allRes.data?.data || allRes.data || []
+        setSimilarProducts(allProds.filter(p => (p._id || p.id) !== (res.data._id || res.data.id)).slice(0, 4))
       } catch {
-        const mock = mockProducts.find(p => p.id === Number(productId))
-        setProduct(mock || null)
-        if (mock) setSimilarProducts(mockProducts.filter(p => p.category === mock.category && p.id !== mock.id).slice(0, 4))
+        setProduct(null)
       } finally { setLoading(false) }
     }
     fetchProduct()
     window.scrollTo({ top: 0 })
   }, [productId])
+
+  async function handleReviewSubmit(e) {
+    e.preventDefault()
+    setReviewError("")
+    setReviewSuccess("")
+    setReviewLoading(true)
+    try {
+      await createReviewAPI({ productId: pid, rating: reviewForm.rating, title: reviewForm.title, body: reviewForm.body })
+      setReviewSuccess("Review submitted successfully!")
+      setReviewForm({ rating: 5, title: "", body: "" })
+      await fetchReviews(productId)
+    } catch (err) {
+      setReviewError(err.message || "Failed to submit review")
+    } finally {
+      setReviewLoading(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -76,7 +120,12 @@ export default function ProductDetail() {
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0
   const tags = Array.isArray(product.tags) ? product.tags : []
-  const productImages = [product.image, product.image, product.image, product.image]
+  const imgSrc = Array.isArray(product.image) ? product.image : [product.image]
+  const productImages = imgSrc.length > 0 ? imgSrc : ["https://placehold.co/400x400/e9e8e6/1a1c1b?text=No+Image"]
+
+  const displayAvgRating = reviewStats ? reviewStats.avgRating : 0
+  const displayTotalReviews = reviewStats ? reviewStats.totalReviews : 0
+  const fullStars = Math.floor(displayAvgRating)
 
   return (
     <div className="min-h-screen">
@@ -148,10 +197,10 @@ export default function ProductDetail() {
             <div className="flex items-center gap-2">
               <div className="flex text-secondary">
                 {[1,2,3,4,5].map(i => (
-                  <span key={i} className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                  <span key={i} className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: `'FILL' ${i <= fullStars ? 1 : 0}` }}>star</span>
                 ))}
               </div>
-              <span className="text-xs text-on-surface-variant font-label">4.9 (245 Reviews)</span>
+              <span className="text-xs text-on-surface-variant font-label">{displayAvgRating} ({displayTotalReviews} Reviews)</span>
             </div>
 
             {/* Price */}
@@ -206,7 +255,11 @@ export default function ProductDetail() {
                 >
                   Add To Cart
                 </button>
-                <button className="bg-secondary-container text-on-secondary-container py-3 px-4 sm:px-6 rounded-lg text-xs font-headline font-bold uppercase tracking-wide cursor-pointer active:scale-[0.98] transition-all">
+                <button
+                  onClick={() => { addToCart(product); navigate("/cart") }}
+                  disabled={product.inStock === false}
+                  className="bg-secondary-container text-on-secondary-container py-3 px-4 sm:px-6 rounded-lg text-xs font-headline font-bold uppercase tracking-wide cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.98] transition-all"
+                >
                   Buy Now
                 </button>
                 <button className="p-2.5 border border-outline-variant/20 rounded-lg cursor-pointer hover:bg-surface-container-low transition-colors active:scale-90">
@@ -297,31 +350,27 @@ export default function ProductDetail() {
               {/* Review summary */}
               <div className="mb-8">
                 <div className="text-center mb-4">
-                  <p className="text-4xl font-headline font-extrabold text-primary">4.9 <span className="text-sm font-normal text-on-surface-variant font-label">out of 5</span></p>
+                  <p className="text-4xl font-headline font-extrabold text-primary">{displayAvgRating} <span className="text-sm font-normal text-on-surface-variant font-label">out of 5</span></p>
                   <div className="flex justify-center text-secondary my-2">
                     {[1,2,3,4,5].map(i => (
-                      <span key={i} className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                      <span key={i} className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: `'FILL' ${i <= fullStars ? 1 : 0}` }}>star</span>
                     ))}
                   </div>
-                  <p className="text-xs text-on-surface-variant font-label">(245 Reviews)</p>
+                  <p className="text-xs text-on-surface-variant font-label">({displayTotalReviews} Reviews)</p>
                 </div>
                 {/* Rating bars */}
-                <div className="space-y-2 max-w-sm mx-auto">
-                  {[
-                    { star: 5, pct: 85 },
-                    { star: 4, pct: 60 },
-                    { star: 3, pct: 15 },
-                    { star: 2, pct: 5 },
-                    { star: 1, pct: 2 },
-                  ].map(r => (
-                    <div key={r.star} className="flex items-center gap-3">
-                      <span className="text-xs font-label w-10 text-on-surface-variant shrink-0">{r.star} Star</span>
-                      <div className="flex-1 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
-                        <div className="bg-secondary h-full rounded-full transition-all duration-500" style={{ width: `${r.pct}%` }} />
+                {reviewStats && (
+                  <div className="space-y-2 max-w-sm mx-auto">
+                    {reviewStats.breakdown.map(r => (
+                      <div key={r.star} className="flex items-center gap-3">
+                        <span className="text-xs font-label w-10 text-on-surface-variant shrink-0">{r.star} Star</span>
+                        <div className="flex-1 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+                          <div className="bg-secondary h-full rounded-full transition-all duration-500" style={{ width: `${r.pct}%` }} />
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Review list */}
@@ -337,33 +386,127 @@ export default function ProductDetail() {
                   </div>
                 </div>
 
-                {REVIEWS.map(review => (
-                  <article key={review.id} className="border-b border-outline-variant/10 pb-6 mb-6 last:border-none last:mb-0">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-xs font-headline font-bold">
-                          {review.name.charAt(0)}
+                {reviews.length === 0 ? (
+                  <div className="text-center py-10">
+                    <span className="material-symbols-outlined text-outline text-4xl mb-3 block">rate_review</span>
+                    <p className="text-sm text-on-surface-variant font-label">No reviews yet. Be the first to review!</p>
+                  </div>
+                ) : (
+                  reviews.map(review => (
+                    <article key={review._id || review.id} className="border-b border-outline-variant/10 pb-6 mb-6 last:border-none last:mb-0">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-xs font-headline font-bold overflow-hidden">
+                            {review.userId?.avatar ? (
+                              <img src={review.userId.avatar} alt={review.userId.name} className="w-full h-full object-cover" />
+                            ) : (
+                              (review.userId?.name || "U").charAt(0)
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-xs font-headline font-bold text-on-surface">{review.userId?.name || "Anonymous"}</p>
+                            <p className="text-[10px] text-primary-container font-label font-semibold">(Verified)</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-xs font-headline font-bold text-on-surface">{review.name}</p>
-                          {review.verified && <p className="text-[10px] text-primary-container font-label font-semibold">(Verified)</p>}
-                        </div>
+                        <span className="text-[10px] text-on-surface-variant font-label">
+                          {new Date(review.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+                        </span>
                       </div>
-                      <span className="text-[10px] text-on-surface-variant font-label">{review.time}</span>
+                      {review.title && <h4 className="text-xs font-headline font-bold mb-2 uppercase text-on-surface">{review.title}</h4>}
+                      {review.body && <p className="text-xs text-on-surface-variant leading-relaxed mb-3 font-body">{review.body}</p>}
+                      <div className="flex items-center gap-1">
+                        <div className="flex text-secondary">
+                          {Array.from({ length: review.rating }).map((_, i) => (
+                            <span key={i} className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                          ))}
+                        </div>
+                        <span className="text-xs font-headline font-bold text-on-surface">{review.rating}.0</span>
+                      </div>
+                    </article>
+                  ))
+                )}
+              </div>
+
+              {/* Write a Review form */}
+              {user ? (
+                <div className="mt-8 border-t border-outline-variant/10 pt-8">
+                  <h3 className="font-headline font-bold text-lg text-primary mb-4">Write a Review</h3>
+
+                  {reviewSuccess && (
+                    <div className="mb-4 bg-primary/5 text-primary text-xs font-label font-semibold px-4 py-2.5 rounded-lg">
+                      {reviewSuccess}
                     </div>
-                    <h4 className="text-xs font-headline font-bold mb-2 uppercase text-on-surface">{review.title}</h4>
-                    <p className="text-xs text-on-surface-variant leading-relaxed mb-3 font-body">{review.body}</p>
-                    <div className="flex items-center gap-1">
-                      <div className="flex text-secondary">
-                        {Array.from({ length: review.rating }).map((_, i) => (
-                          <span key={i} className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                  )}
+                  {reviewError && (
+                    <div className="mb-4 bg-error/5 text-error text-xs font-label font-semibold px-4 py-2.5 rounded-lg">
+                      {reviewError}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleReviewSubmit} className="space-y-4">
+                    {/* Star rating selector */}
+                    <div>
+                      <label className="text-[10px] font-bold font-label block mb-2 text-on-surface uppercase tracking-widest">Rating</label>
+                      <div className="flex gap-1">
+                        {[1,2,3,4,5].map(star => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setReviewForm(f => ({ ...f, rating: star }))}
+                            className="cursor-pointer transition-transform hover:scale-110 active:scale-95"
+                          >
+                            <span
+                              className={`material-symbols-outlined text-[28px] ${star <= reviewForm.rating ? "text-secondary" : "text-outline-variant/30"}`}
+                              style={{ fontVariationSettings: `'FILL' ${star <= reviewForm.rating ? 1 : 0}` }}
+                            >
+                              star
+                            </span>
+                          </button>
                         ))}
                       </div>
-                      <span className="text-xs font-headline font-bold text-on-surface">{review.rating}.0</span>
                     </div>
-                  </article>
-                ))}
-              </div>
+
+                    {/* Title */}
+                    <div>
+                      <label className="text-[10px] font-bold font-label block mb-2 text-on-surface uppercase tracking-widest">Title</label>
+                      <input
+                        type="text"
+                        value={reviewForm.title}
+                        onChange={e => setReviewForm(f => ({ ...f, title: e.target.value }))}
+                        placeholder="Summarize your experience"
+                        className="w-full border border-outline-variant/20 rounded-lg px-3 py-2.5 text-xs font-label bg-surface-container-low focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                      />
+                    </div>
+
+                    {/* Body */}
+                    <div>
+                      <label className="text-[10px] font-bold font-label block mb-2 text-on-surface uppercase tracking-widest">Review</label>
+                      <textarea
+                        value={reviewForm.body}
+                        onChange={e => setReviewForm(f => ({ ...f, body: e.target.value }))}
+                        placeholder="Share your thoughts about this product..."
+                        rows={4}
+                        className="w-full border border-outline-variant/20 rounded-lg px-3 py-2.5 text-xs font-label bg-surface-container-low focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
+                      />
+                    </div>
+
+                    {/* Submit */}
+                    <button
+                      type="submit"
+                      disabled={reviewLoading}
+                      className="bg-velvet-gradient text-on-primary py-3 px-8 rounded-lg text-xs font-headline font-bold uppercase tracking-wide cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] transition-all"
+                    >
+                      {reviewLoading ? "Submitting..." : "Submit Review"}
+                    </button>
+                  </form>
+                </div>
+              ) : (
+                <div className="mt-8 border-t border-outline-variant/10 pt-6 text-center">
+                  <p className="text-xs text-on-surface-variant font-label">
+                    <Link to="/login" className="text-primary font-semibold hover:underline cursor-pointer">Log in</Link> to write a review.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </section>

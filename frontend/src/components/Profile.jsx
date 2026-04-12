@@ -1,7 +1,7 @@
-import { useState, useContext } from "react"
+import { useState, useContext, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import UserContext from "../context/UserContext"
-import { updateUserAPI, logoutAPI } from "../api"
+import { updateUserAPI, uploadAvatarAPI, logoutAPI } from "../api"
 
 export default function Profile() {
   const { user, setUser } = useContext(UserContext)
@@ -12,6 +12,22 @@ export default function Profile() {
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
   const [form, setForm] = useState({ name: user?.name || "", email: user?.email || "", mobile: user?.mobileNumber || "", password: "" })
+  const [avatarLoading, setAvatarLoading] = useState(false)
+  const fileInputRef = useRef(null)
+
+  async function handleAvatarUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setAvatarLoading(true)
+    try {
+      const fd = new FormData()
+      fd.append("avatar", file)
+      const res = await uploadAvatarAPI(fd)
+      setUser(prev => ({ ...prev, avatar: res.data?.avatar || prev?.avatar }))
+      setSuccess("Avatar updated!")
+    } catch (err) { setError(err.message || "Failed to upload avatar") }
+    finally { setAvatarLoading(false); if (fileInputRef.current) fileInputRef.current.value = "" }
+  }
 
   function update(field, value) { setForm(prev => ({ ...prev, [field]: value })); setError(""); setSuccess("") }
 
@@ -40,8 +56,18 @@ export default function Profile() {
           {/* Header gradient */}
           <div className="h-24 bg-velvet-gradient relative">
             <div className="absolute -bottom-10 left-1/2 -translate-x-1/2">
-              <div className="w-20 h-20 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center text-2xl font-headline font-bold shadow-xl border-4 border-surface-container-lowest dark:border-gray-800">
-                {user.name?.charAt(0).toUpperCase()}
+              <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                {user.avatar ? (
+                  <img src={user.avatar} alt={user.name} className="w-20 h-20 rounded-full object-cover shadow-xl border-4 border-surface-container-lowest" />
+                ) : (
+                  <div className="w-20 h-20 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center text-2xl font-headline font-bold shadow-xl border-4 border-surface-container-lowest">
+                    {user.name?.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="material-symbols-outlined text-white text-[20px]">{avatarLoading ? "hourglass_empty" : "photo_camera"}</span>
+                </div>
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
               </div>
             </div>
           </div>

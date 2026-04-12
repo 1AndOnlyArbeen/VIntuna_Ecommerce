@@ -17,6 +17,7 @@ import SearchResults from "./components/Categories/SearchResults"
 import Login from "./components/Login"
 import Signup from "./components/Signup"
 import ForgotPassword from "./components/ForgotPassword"
+import VerifyEmail from "./components/VerifyEmail"
 import Profile from "./components/Profile"
 import Contact from "./components/Contact/Contact"
 import Orders from "./components/Orders"
@@ -29,6 +30,9 @@ import AdminBanners from "./components/Admin/AdminBanners"
 import AdminFeatured from "./components/Admin/AdminFeatured"
 import AdminCategories from "./components/Admin/AdminCategories"
 import AdminDiscounts from "./components/Admin/AdminDiscounts"
+import AdminOrders from "./components/Admin/AdminOrders"
+import AdminReviews from "./components/Admin/AdminReviews"
+import AdminContacts from "./components/Admin/AdminContacts"
 import AdminProfile from "./components/Admin/AdminProfile"
 
 const router = createBrowserRouter([
@@ -45,6 +49,7 @@ const router = createBrowserRouter([
       { path: "signup", element: <Signup /> },
       { path: "register", element: <Navigate to="/signup" replace /> },
       { path: "forgot-password", element: <ForgotPassword /> },
+      { path: "verify-email", element: <VerifyEmail /> },
       { path: "profile", element: <Profile /> },
       { path: "contact", element: <Contact /> },
       { path: "orders", element: <Orders /> },
@@ -61,7 +66,10 @@ const router = createBrowserRouter([
       { path: "banners", element: <AdminBanners /> },
       { path: "featured", element: <AdminFeatured /> },
       { path: "categories", element: <AdminCategories /> },
+      { path: "orders", element: <AdminOrders /> },
       { path: "discounts", element: <AdminDiscounts /> },
+      { path: "reviews", element: <AdminReviews /> },
+      { path: "contacts", element: <AdminContacts /> },
       { path: "profile", element: <AdminProfile /> },
     ],
   },

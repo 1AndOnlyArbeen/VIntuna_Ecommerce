@@ -170,4 +170,114 @@ export async function clearCartAPI() {
   return apiCall("/cart/clear", { method: "DELETE" })
 }
 
+// ========================
+// BANNERS
+// ========================
+export async function getBannersAPI(params = {}) {
+  const query = new URLSearchParams(params).toString()
+  return apiCall(`/banners${query ? `?${query}` : ""}`)
+}
+export async function createBannerAPI(formData) {
+  return apiCall("/banners", { method: "POST", body: formData })
+}
+export async function updateBannerAPI(id, formData) {
+  return apiCall(`/banners/${id}`, { method: "PUT", body: formData })
+}
+export async function toggleBannerAPI(id) {
+  return apiCall(`/banners/${id}/toggle`, { method: "PATCH" })
+}
+export async function deleteBannerAPI(id) {
+  return apiCall(`/banners/${id}`, { method: "DELETE" })
+}
+
+// ========================
+// DISCOUNTS
+// ========================
+export async function getDiscountsAPI(params = {}) {
+  const query = new URLSearchParams(params).toString()
+  return apiCall(`/discounts${query ? `?${query}` : ""}`)
+}
+export async function createDiscountAPI(data) {
+  return apiCall("/discounts", { method: "POST", body: JSON.stringify(data) })
+}
+export async function updateDiscountAPI(id, data) {
+  return apiCall(`/discounts/${id}`, { method: "PUT", body: JSON.stringify(data) })
+}
+export async function toggleDiscountAPI(id) {
+  return apiCall(`/discounts/${id}/toggle`, { method: "PATCH" })
+}
+export async function deleteDiscountAPI(id) {
+  return apiCall(`/discounts/${id}`, { method: "DELETE" })
+}
+
+// ========================
+// FEATURED
+// ========================
+export async function toggleFeaturedAPI(id) {
+  return apiCall(`/products/${id}/featured`, { method: "PATCH" })
+}
+
+// ========================
+// ADMIN
+// ========================
+export async function getAdminStatsAPI() {
+  return apiCall("/admin/stats")
+}
+export async function getAdminOrdersAPI(params = {}) {
+  const query = new URLSearchParams(params).toString()
+  return apiCall(`/admin/orders${query ? `?${query}` : ""}`)
+}
+export async function updateAdminOrderStatusAPI(id, status) {
+  return apiCall(`/admin/orders/${id}/status`, { method: "PUT", body: JSON.stringify({ status }) })
+}
+
+// ========================
+// REVIEWS
+// ========================
+export async function getProductReviewsAPI(productId, params = {}) {
+  const query = new URLSearchParams(params).toString()
+  return apiCall(`/reviews/product/${productId}${query ? `?${query}` : ""}`)
+}
+export async function createReviewAPI(data) {
+  return apiCall("/reviews", { method: "POST", body: JSON.stringify(data) })
+}
+export async function deleteReviewAPI(id) {
+  return apiCall(`/reviews/${id}`, { method: "DELETE" })
+}
+export async function getAllReviewsAPI(params = {}) {
+  const query = new URLSearchParams(params).toString()
+  return apiCall(`/reviews/admin/all${query ? `?${query}` : ""}`)
+}
+
+// ========================
+// CONTACT
+// ========================
+export async function submitContactAPI(data) {
+  return apiCall("/contact", { method: "POST", body: JSON.stringify(data) })
+}
+export async function getAllContactsAPI(params = {}) {
+  const query = new URLSearchParams(params).toString()
+  return apiCall(`/contact${query ? `?${query}` : ""}`)
+}
+export async function toggleContactReadAPI(id) {
+  return apiCall(`/contact/${id}/read`, { method: "PATCH" })
+}
+export async function deleteContactAPI(id) {
+  return apiCall(`/contact/${id}`, { method: "DELETE" })
+}
+
+// ========================
+// COUPON VALIDATION
+// ========================
+export async function validateCouponAPI(code, cartTotal) {
+  return apiCall("/discounts/validate", { method: "POST", body: JSON.stringify({ code, cartTotal }) })
+}
+
+// ========================
+// AI CHAT
+// ========================
+export async function sendChatMessageAPI(message, history = []) {
+  return apiCall("/chat", { method: "POST", body: JSON.stringify({ message, history }) })
+}
+
 export default apiCall

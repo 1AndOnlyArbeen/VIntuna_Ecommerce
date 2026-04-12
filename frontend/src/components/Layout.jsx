@@ -2,6 +2,7 @@ import Header from "./Header/Header"
 import Footer from "./Footer/Footer"
 import CartSidebar from "./Cart/CartSidebar"
 import BottomNav from "./BottomNav"
+import ChatWidget from "./ChatWidget"
 import { Outlet } from "react-router-dom"
 
 export default function Layout() {
@@ -14,6 +15,7 @@ export default function Layout() {
       <Footer />
       <CartSidebar />
       <BottomNav />
+      <ChatWidget />
     </div>
   )
 }

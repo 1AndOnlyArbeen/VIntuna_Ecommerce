@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { getAddressesAPI, createAddressAPI, updateAddressAPI, deleteAddressAPI } from "../api"
+import ConfirmModal from "./ConfirmModal"
 
 const ADDRESS_TYPES = [
   { id: "home", label: "Home", icon: "home" },
@@ -17,6 +18,7 @@ export default function Addresses() {
   const [form, setForm] = useState({ ...emptyForm })
   const [errors, setErrors] = useState({})
   const [saving, setSaving] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   useEffect(() => { fetchAddresses() }, [])
 
@@ -50,8 +52,8 @@ export default function Addresses() {
   }
 
   async function handleDelete(id) {
-    if (!confirm("Delete this address?")) return
     try { await deleteAddressAPI(id); setAddresses(prev => prev.filter(a => (a._id || a.id) !== id)) } catch {}
+    setDeleteTarget(null)
   }
 
   const inputClass = "w-full border rounded-xl px-4 py-3 text-sm font-label focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-surface"
@@ -71,6 +73,8 @@ export default function Addresses() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 min-h-screen">
+      <ConfirmModal open={!!deleteTarget} title="Delete Address?" message="Are you sure you want to delete this address? This action cannot be undone." onConfirm={() => handleDelete(deleteTarget)} onCancel={() => setDeleteTarget(null)} />
+
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-headline font-extrabold text-primary tracking-tight">My Addresses</h1>
         {!showForm && (
@@ -145,7 +149,7 @@ export default function Addresses() {
                   </span>
                   <div className="flex gap-3">
                     <button onClick={() => startEdit(addr)} className="text-secondary text-xs font-label font-bold hover:underline cursor-pointer uppercase tracking-widest">Edit</button>
-                    <button onClick={() => handleDelete(addr._id || addr.id)} className="text-error text-xs font-label font-bold hover:underline cursor-pointer uppercase tracking-widest">Delete</button>
+                    <button onClick={() => setDeleteTarget(addr._id || addr.id)} className="text-error text-xs font-label font-bold hover:underline cursor-pointer uppercase tracking-widest">Delete</button>
                   </div>
                 </div>
                 <p className="text-sm font-headline font-bold text-primary">{addr.fullName}</p>

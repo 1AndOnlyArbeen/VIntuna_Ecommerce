@@ -1,58 +1,67 @@
-import mongoose from 'mongoose'
+import mongoose from "mongoose";
+
+const orderItemSchema = new mongoose.Schema({
+    productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
+    name: { type: String },
+    image: { type: String },
+    price: { type: Number },
+    quantity: { type: Number },
+}, { _id: false });
 
 const orderSchema = new mongoose.Schema({
-    userId : {
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: "User"
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
     },
-    orderId : {
-        type: String, 
+    orderId: {
+        type: String,
         required: [true, "provide orderId"],
-        unique:  true
+        unique: true,
     },
-    productId:{
-        type: String, 
-        default: ""
+    items: {
+        type: [orderItemSchema],
+        default: [],
     },
-
-    product_details:{
-        _id: String, 
-       name: String, 
-       Image: Array
+    deliveryAddress: {
+        fullName: String,
+        phone: String,
+        street: String,
+        city: String,
+        landmark: String,
+        label: String,
     },
-
-    paymentId: {
-        type:String, 
-        default:""
+    paymentMethod: {
+        type: String,
+        enum: ["cod"],
+        default: "cod",
     },
-    payment_status:{
-        type: String, 
-        default: ""
+    paymentStatus: {
+        type: String,
+        enum: ["pending", "paid"],
+        default: "pending",
     },
-    delivery_address:{
-        type: mongoose.Schema.Types. ObjectId,
-        ref:"Address"
+    status: {
+        type: String,
+        enum: ["pending", "warehouse", "delivering", "delivered", "cancelled"],
+        default: "pending",
     },
-    subTotalAmt:{
+    subtotal: {
         type: Number,
-        default:0
-
+        default: 0,
     },
-    totalAmt:{
+    deliveryFee: {
         type: Number,
-        default: 0
-
+        default: 0,
     },
-    invoice_redeipt: {
-        type: String, 
-        default: ""
+    totalAmount: {
+        type: Number,
+        default: 0,
+    },
+    couponCode: {
+        type: String,
+        default: "",
+    },
+}, { timestamps: true });
 
-    }
-
-
-
-},{timestamps: true})
-
-
-
-export const Order = mongoose.model("Order", orderSchema)
+export const Order = mongoose.model("Order", orderSchema);

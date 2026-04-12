@@ -1,7 +1,25 @@
 import { useScrollRevealAll } from "../../hooks/useScrollReveal"
+import { useState } from "react"
+import { submitContactAPI } from "../../api"
 
 export default function Contact() {
   const containerRef = useScrollRevealAll()
+  const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" })
+  const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState("")
+  const [error, setError] = useState("")
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!form.name || !form.email || !form.message) return setError("Name, email, and message are required")
+    setLoading(true); setError(""); setSuccess("")
+    try {
+      await submitContactAPI(form)
+      setSuccess("Message sent! We'll get back to you soon.")
+      setForm({ name: "", email: "", phone: "", message: "" })
+    } catch (err) { setError(err.message || "Failed to send") }
+    finally { setLoading(false) }
+  }
 
   return (
     <div ref={containerRef} className="min-h-screen bg-surface">
@@ -59,29 +77,31 @@ export default function Contact() {
           {/* Contact Form */}
           <div className="bg-surface-container-lowest rounded-xl border border-outline-variant/10 p-7 reveal-right">
             <h2 className="text-lg font-headline font-bold text-primary mb-6">Send us a message</h2>
-            <form className="space-y-5">
+            {success && <div className="bg-primary/5 border border-primary/20 text-primary-container text-sm px-4 py-3 rounded-xl mb-4 font-label">{success}</div>}
+            {error && <div className="bg-error/5 border border-error/20 text-error text-sm px-4 py-3 rounded-xl mb-4 font-label">{error}</div>}
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label className="block text-xs font-label font-bold uppercase tracking-widest text-on-surface-variant mb-2">Full Name</label>
-                <input type="text" placeholder="Your name"
-                  className="w-full border border-outline-variant/30 rounded-xl px-4 py-3 text-sm font-label focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+                <input type="text" placeholder="Your name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+                  className="w-full border border-outline-variant/30 rounded-xl px-4 py-3 text-sm font-label focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" required />
               </div>
               <div>
                 <label className="block text-xs font-label font-bold uppercase tracking-widest text-on-surface-variant mb-2">Email</label>
-                <input type="email" placeholder="you@example.com"
-                  className="w-full border border-outline-variant/30 rounded-xl px-4 py-3 text-sm font-label focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+                <input type="email" placeholder="you@example.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
+                  className="w-full border border-outline-variant/30 rounded-xl px-4 py-3 text-sm font-label focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" required />
               </div>
               <div>
                 <label className="block text-xs font-label font-bold uppercase tracking-widest text-on-surface-variant mb-2">Phone</label>
-                <input type="tel" placeholder="+977 98XXXXXXXX"
+                <input type="tel" placeholder="+977 98XXXXXXXX" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
                   className="w-full border border-outline-variant/30 rounded-xl px-4 py-3 text-sm font-label focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
               </div>
               <div>
                 <label className="block text-xs font-label font-bold uppercase tracking-widest text-on-surface-variant mb-2">Message</label>
-                <textarea placeholder="How can we help?" rows={4}
-                  className="w-full border border-outline-variant/30 rounded-xl px-4 py-3 text-sm font-label focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none transition-all" />
+                <textarea placeholder="How can we help?" rows={4} value={form.message} onChange={e => setForm({ ...form, message: e.target.value })}
+                  className="w-full border border-outline-variant/30 rounded-xl px-4 py-3 text-sm font-label focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none transition-all" required />
               </div>
-              <button type="submit" className="w-full bg-velvet-gradient text-on-primary font-headline font-bold py-4 rounded-full transition-all cursor-pointer btn-press uppercase tracking-widest text-sm shadow-lg">
-                Send Message
+              <button type="submit" disabled={loading} className="w-full bg-velvet-gradient text-on-primary font-headline font-bold py-4 rounded-full transition-all cursor-pointer btn-press uppercase tracking-widest text-sm shadow-lg disabled:opacity-50">
+                {loading ? "Sending..." : "Send Message"}
               </button>
             </form>
           </div>

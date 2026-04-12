@@ -2,21 +2,19 @@ import { useState, useContext } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { useCart } from "../../context/CartContext"
 import UserContext from "../../context/UserContext"
+import { createOrderAPI, validateCouponAPI } from "../../api"
 import emptyCartImg from "../../assets/empty_cart.webp"
 
 const PAYMENT_METHODS = [
   { id: "cod", name: "Cash on Delivery", icon: "payments", description: "Pay when you receive your order" },
-  { id: "esewa", name: "eSewa", icon: null, color: "bg-green-500", letter: "e", description: "Pay via eSewa digital wallet" },
-  { id: "khalti", name: "Khalti", icon: null, color: "bg-purple-600", letter: "K", description: "Pay via Khalti digital wallet" },
-  { id: "ime", name: "IME Pay", icon: null, color: "bg-red-600", letter: "I", description: "Pay via IME Pay" },
-  { id: "connectips", name: "ConnectIPS", icon: null, color: "bg-blue-700", letter: "C", description: "Direct bank transfer via ConnectIPS" },
-  { id: "card", name: "Credit / Debit Card", icon: "credit_card", description: "Visa, Mastercard, or other cards" },
+  { id: "esewa", name: "eSewa", icon: null, color: "bg-green-500", letter: "e", description: "Pay via eSewa digital wallet", disabled: true },
+  { id: "khalti", name: "Khalti", icon: null, color: "bg-purple-600", letter: "K", description: "Pay via Khalti digital wallet", disabled: true },
 ]
 
 const STEPS = [
   { id: 1, label: "Address" },
   { id: 2, label: "Payment" },
-  { id: 3, label: "Confirmation" },
+  { id: 3, label: "Review" },
 ]
 
 export default function Cart() {
@@ -26,13 +24,20 @@ export default function Cart() {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const [showCheckout, setShowCheckout] = useState(false)
   const [step, setStep] = useState(1)
-  const [selectedPayment, setSelectedPayment] = useState("")
+  const [selectedPayment, setSelectedPayment] = useState("cod")
   const [address, setAddress] = useState({ fullName: "", phone: "", street: "", city: "", landmark: "", label: "home" })
   const [addressErrors, setAddressErrors] = useState({})
   const [orderNumber, setOrderNumber] = useState("")
+  const [placingOrder, setPlacingOrder] = useState(false)
+  const [orderError, setOrderError] = useState("")
+  const [couponCode, setCouponCode] = useState("")
+  const [couponApplied, setCouponApplied] = useState(null)
+  const [couponError, setCouponError] = useState("")
+  const [couponLoading, setCouponLoading] = useState(false)
 
   const deliveryFee = cartTotal >= 200 ? 0 : 25
-  const grandTotal = cartTotal + deliveryFee
+  const discountAmount = couponApplied ? couponApplied.discountAmount : 0
+  const grandTotal = cartTotal + deliveryFee - discountAmount
 
   function handleCheckout() {
     if (!user) { setShowLoginPrompt(true); return }
@@ -41,7 +46,17 @@ export default function Cart() {
     setShowCheckout(true)
   }
 
-  function closeCheckout() { setShowCheckout(false); setStep(1); setSelectedPayment(""); setAddressErrors({}) }
+  function closeCheckout() {
+    setShowCheckout(false)
+    setStep(1)
+    setSelectedPayment("cod")
+    setAddressErrors({})
+    setOrderError("")
+    setCouponCode("")
+    setCouponApplied(null)
+    setCouponError("")
+    setCouponLoading(false)
+  }
 
   function validateAddress() {
     const errors = {}
@@ -54,11 +69,55 @@ export default function Cart() {
   }
 
   function goToStep2() { if (validateAddress()) setStep(2) }
-  function goToStep3() { if (selectedPayment) setStep(3) }
 
-  function handlePlaceOrder() {
-    const orderId = "VNT-" + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substring(2, 6).toUpperCase()
-    setOrderNumber(orderId)
+  async function handleApplyCoupon() {
+    if (!couponCode.trim()) { setCouponError("Please enter a coupon code"); return }
+    setCouponLoading(true)
+    setCouponError("")
+    try {
+      const res = await validateCouponAPI(couponCode, cartTotal)
+      setCouponApplied(res.data)
+      setCouponError("")
+    } catch (err) {
+      setCouponError(err.response?.data?.message || err.message || "Invalid coupon code")
+      setCouponApplied(null)
+    } finally {
+      setCouponLoading(false)
+    }
+  }
+
+  function handleRemoveCoupon() {
+    setCouponApplied(null)
+    setCouponCode("")
+    setCouponError("")
+  }
+
+  async function handlePlaceOrder() {
+    setPlacingOrder(true)
+    setOrderError("")
+    try {
+      const orderItems = cart.map(item => ({
+        productId: item._id || item.id,
+        name: item.name,
+        image: item.image,
+        price: item.price,
+        quantity: item.quantity,
+      }))
+      const res = await createOrderAPI({
+        items: orderItems,
+        deliveryAddress: address,
+        subtotal: cartTotal,
+        deliveryFee,
+        totalAmount: grandTotal,
+        couponCode: couponApplied?.code || "",
+      })
+      setOrderNumber(res.data?.orderId || res.data?._id || "Order Placed")
+      setStep(4)
+    } catch (err) {
+      setOrderError(err.message || "Failed to place order. Please try again.")
+    } finally {
+      setPlacingOrder(false)
+    }
   }
 
   function handleOrderComplete() { clearCart(); closeCheckout(); setOrderNumber(""); navigate("/") }
@@ -115,7 +174,7 @@ export default function Cart() {
             </div>
 
             {/* Step indicator */}
-            {step <= 3 && (
+            {step <= 3 && step >= 1 && (
               <div className="px-6 pt-5 pb-3 shrink-0">
                 <div className="flex items-center justify-between">
                   {STEPS.map((s, i) => (
@@ -200,11 +259,52 @@ export default function Cart() {
                     <p className="text-sm font-headline font-bold text-primary">{address.fullName}</p>
                     <p className="text-xs text-on-surface-variant font-label">{address.street}, {address.city}</p>
                   </div>
+
+                  {/* Coupon Code Section */}
+                  <div className="bg-surface-container-low rounded-xl p-4 mb-5">
+                    <h4 className="text-sm font-headline font-bold text-primary mb-3 uppercase tracking-widest">Coupon Code</h4>
+                    {couponApplied ? (
+                      <div className="flex items-center justify-between bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-green-600 dark:text-green-400 text-[20px]">check_circle</span>
+                          <div>
+                            <p className="text-sm font-headline font-bold text-green-700 dark:text-green-400">{couponApplied.code} applied</p>
+                            <p className="text-xs text-green-600 dark:text-green-500 font-label">
+                              {couponApplied.type === "percentage" ? `${couponApplied.discount}% off` : `Rs.${couponApplied.discount} off`} — You save Rs.{couponApplied.discountAmount}
+                            </p>
+                          </div>
+                        </div>
+                        <button onClick={handleRemoveCoupon} className="text-xs font-headline font-bold text-red-500 hover:text-red-700 cursor-pointer uppercase tracking-widest">Remove</button>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Enter coupon code"
+                            value={couponCode}
+                            onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponError("") }}
+                            className={`flex-1 border rounded-xl px-4 py-3 text-sm font-label focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-surface ${couponError ? "border-error" : "border-outline-variant/30"}`}
+                          />
+                          <button
+                            onClick={handleApplyCoupon}
+                            disabled={couponLoading}
+                            className="px-5 py-3 bg-velvet-gradient text-on-primary font-headline font-bold rounded-xl text-sm cursor-pointer disabled:opacity-50 uppercase tracking-widest shrink-0"
+                          >
+                            {couponLoading ? "..." : "Apply"}
+                          </button>
+                        </div>
+                        {couponError && <p className="text-xs text-error mt-2 font-label">{couponError}</p>}
+                      </div>
+                    )}
+                  </div>
+
                   <h4 className="text-sm font-headline font-bold text-primary mb-4 uppercase tracking-widest">Select Payment</h4>
                   <div className="space-y-2">
                     {PAYMENT_METHODS.map(method => (
-                      <button key={method.id} onClick={() => setSelectedPayment(method.id)}
-                        className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer text-left ${
+                      <button key={method.id}
+                        onClick={() => !method.disabled && setSelectedPayment(method.id)}
+                        className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${method.disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"} ${
                           selectedPayment === method.id ? "border-primary bg-primary/5" : "border-outline-variant/20 hover:border-primary/30"
                         }`}>
                         <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0">
@@ -216,7 +316,9 @@ export default function Cart() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-headline font-bold text-primary">{method.name}</p>
-                          <p className="text-xs text-on-surface-variant font-label">{method.description}</p>
+                          <p className="text-xs text-on-surface-variant font-label">
+                            {method.disabled ? "Coming soon" : method.description}
+                          </p>
                         </div>
                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${selectedPayment === method.id ? "border-primary" : "border-outline-variant/40"}`}>
                           {selectedPayment === method.id && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
@@ -227,18 +329,24 @@ export default function Cart() {
                 </div>
               )}
 
-              {/* Step 3: Confirmation */}
+              {/* Step 3: Review Order */}
               {step === 3 && (
                 <div className="p-6 space-y-4">
                   <h4 className="text-sm font-headline font-bold text-primary uppercase tracking-widest">Review Your Order</h4>
                   <div className="bg-surface-container-low rounded-xl p-4">
-                    <span className="text-[10px] font-label font-bold text-on-surface-variant uppercase tracking-widest">Delivery</span>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-label font-bold text-on-surface-variant uppercase tracking-widest">Delivery</span>
+                      <button onClick={() => setStep(1)} className="text-secondary text-xs font-headline font-bold cursor-pointer uppercase tracking-widest">Change</button>
+                    </div>
                     <p className="text-sm font-headline font-bold text-primary mt-1">{address.fullName}</p>
                     <p className="text-xs text-on-surface-variant font-label">{address.street}, {address.city} | {address.phone}</p>
                   </div>
                   <div className="bg-surface-container-low rounded-xl p-4">
-                    <span className="text-[10px] font-label font-bold text-on-surface-variant uppercase tracking-widest">Payment</span>
-                    <p className="text-sm font-headline font-bold text-primary mt-1">{PAYMENT_METHODS.find(p => p.id === selectedPayment)?.name}</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-label font-bold text-on-surface-variant uppercase tracking-widest">Payment</span>
+                      <button onClick={() => setStep(2)} className="text-secondary text-xs font-headline font-bold cursor-pointer uppercase tracking-widest">Change</button>
+                    </div>
+                    <p className="text-sm font-headline font-bold text-primary mt-1">{PAYMENT_METHODS.find(m => m.id === selectedPayment)?.name}</p>
                   </div>
                   <div className="bg-surface-container-low rounded-xl p-4">
                     <span className="text-[10px] font-label font-bold text-on-surface-variant uppercase tracking-widest">Items ({cartCount})</span>
@@ -256,10 +364,19 @@ export default function Cart() {
                     </div>
                     <div className="mt-3 pt-3 border-t border-outline-variant/10 space-y-1 text-sm font-label">
                       <div className="flex justify-between text-on-surface-variant"><span>Subtotal</span><span>Rs.{cartTotal}</span></div>
+                      {couponApplied && (
+                        <div className="flex justify-between text-green-600 dark:text-green-400">
+                          <span>Coupon ({couponApplied.code})</span>
+                          <span className="font-bold">-Rs.{discountAmount}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between text-on-surface-variant"><span>Delivery</span><span className={deliveryFee === 0 ? "text-primary-container font-bold" : ""}>{deliveryFee === 0 ? "FREE" : `Rs.${deliveryFee}`}</span></div>
                       <div className="flex justify-between font-headline font-bold text-primary text-base pt-2"><span>Total</span><span>Rs.{grandTotal}</span></div>
                     </div>
                   </div>
+                  {orderError && (
+                    <div className="bg-error/5 border border-error/20 text-error text-sm px-4 py-3 rounded-xl font-label">{orderError}</div>
+                  )}
                 </div>
               )}
 
@@ -278,7 +395,13 @@ export default function Cart() {
                     <p className="text-lg font-headline font-bold text-primary tracking-wider">{orderNumber}</p>
                   </div>
                   <p className="text-on-surface-variant text-sm font-label mb-1">Total: <span className="font-bold text-primary">Rs.{grandTotal}</span></p>
-                  <p className="text-on-surface-variant text-sm font-label mb-8">Payment: {PAYMENT_METHODS.find(p => p.id === selectedPayment)?.name}</p>
+                  <p className="text-on-surface-variant text-sm font-label mb-1">Payment: {PAYMENT_METHODS.find(m => m.id === selectedPayment)?.name}</p>
+                  {couponApplied && (
+                    <p className="text-green-600 dark:text-green-400 text-sm font-label mb-1">
+                      Coupon <span className="font-bold">{couponApplied.code}</span> applied — You saved Rs.{discountAmount}
+                    </p>
+                  )}
+                  <div className="mb-8" />
                   <button onClick={handleOrderComplete} className="w-full bg-velvet-gradient text-on-primary py-4 rounded-full font-headline font-bold cursor-pointer uppercase tracking-widest text-sm shadow-lg">Continue Shopping</button>
                   <Link to="/orders" className="block mt-4 text-sm text-secondary font-headline font-bold hover:underline cursor-pointer uppercase tracking-widest">View Orders</Link>
                 </div>
@@ -293,8 +416,10 @@ export default function Cart() {
                     <button onClick={() => setStep(step - 1)} className="px-6 py-3 border border-outline-variant/30 text-primary font-headline font-bold rounded-full text-sm hover:bg-surface-container-high cursor-pointer uppercase tracking-widest">Back</button>
                   )}
                   {step === 1 && <button onClick={goToStep2} className="flex-1 bg-velvet-gradient text-on-primary font-headline font-bold py-3 rounded-full text-sm cursor-pointer uppercase tracking-widest">Continue</button>}
-                  {step === 2 && <button onClick={goToStep3} disabled={!selectedPayment} className="flex-1 bg-velvet-gradient disabled:bg-surface-container-high disabled:text-on-surface-variant text-on-primary font-headline font-bold py-3 rounded-full text-sm cursor-pointer disabled:cursor-not-allowed uppercase tracking-widest">{selectedPayment ? "Review Order" : "Select Payment"}</button>}
-                  {step === 3 && <button onClick={() => { handlePlaceOrder(); setStep(4) }} className="flex-1 bg-velvet-gradient text-on-primary font-headline font-bold py-4 rounded-full text-base cursor-pointer uppercase tracking-widest shadow-lg">Place Order — Rs.{grandTotal}</button>}
+                  {step === 2 && <button onClick={() => selectedPayment && setStep(3)} disabled={!selectedPayment} className="flex-1 bg-velvet-gradient text-on-primary font-headline font-bold py-3 rounded-full text-sm cursor-pointer disabled:opacity-50 uppercase tracking-widest">{selectedPayment ? "Review Order" : "Select Payment"}</button>}
+                  {step === 3 && <button onClick={() => { handlePlaceOrder(); }} disabled={placingOrder} className="flex-1 bg-velvet-gradient text-on-primary font-headline font-bold py-4 rounded-full text-base cursor-pointer disabled:opacity-50 uppercase tracking-widest shadow-lg">
+                    {placingOrder ? "Placing Order..." : `Place Order — Rs.${grandTotal}`}
+                  </button>}
                 </div>
               </div>
             )}
@@ -341,6 +466,9 @@ export default function Cart() {
         <h3 className="font-headline font-bold text-primary mb-4 text-sm uppercase tracking-widest">Bill Details</h3>
         <div className="space-y-3 text-sm font-label">
           <div className="flex justify-between text-on-surface-variant"><span>Item Total</span><span>Rs.{cartTotal}</span></div>
+          {couponApplied && (
+            <div className="flex justify-between text-green-600 dark:text-green-400"><span>Coupon Discount ({couponApplied.code})</span><span className="font-bold">-Rs.{discountAmount}</span></div>
+          )}
           <div className="flex justify-between text-on-surface-variant"><span>Delivery Fee</span><span className={deliveryFee === 0 ? "text-primary-container font-bold" : ""}>{deliveryFee === 0 ? "FREE" : `Rs.${deliveryFee}`}</span></div>
           <div className="border-t border-outline-variant/10 pt-3 flex justify-between font-headline font-bold text-primary text-lg"><span>Grand Total</span><span>Rs.{grandTotal}</span></div>
           {deliveryFee > 0 && <p className="text-xs text-secondary font-medium">Add Rs.{200 - cartTotal} more for free delivery!</p>}

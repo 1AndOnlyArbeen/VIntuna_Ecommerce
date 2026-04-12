@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from "react"
 import { useSearchParams, Link } from "react-router-dom"
 import { searchProductsAPI } from "../../api"
-import { products as mockProducts, categories as mockCategories } from "../../data/products"
 import ProductCard from "../ProductCard/ProductCard"
 
 const PER_PAGE = 50
@@ -30,13 +29,9 @@ export default function SearchResults() {
       setLoading(true)
       try {
         const res = await searchProductsAPI(query)
-        setResults(res.data?.length ? res.data : fallbackSearch())
-      } catch { setResults(fallbackSearch()) }
+        setResults(res.data?.data || res.data || [])
+      } catch { setResults([]) }
       finally { setLoading(false) }
-    }
-    function fallbackSearch() {
-      const q = query.toLowerCase()
-      return mockProducts.filter(p => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q) || p.description.toLowerCase().includes(q))
     }
     if (query) search()
     else { setResults([]); setLoading(false) }

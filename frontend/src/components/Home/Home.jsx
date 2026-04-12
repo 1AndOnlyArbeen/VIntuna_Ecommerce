@@ -1,19 +1,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { Link } from "react-router-dom"
-import { getProductsAPI, getCategoriesAPI } from "../../api"
-import { categories as mockCategories, products as mockProducts } from "../../data/products"
+import { getProductsAPI, getCategoriesAPI, getBannersAPI } from "../../api"
 import ProductCard from "../ProductCard/ProductCard"
 import { useScrollRevealAll } from "../../hooks/useScrollReveal"
 
 const PER_PAGE = 50
-
-const BANNERS = [
-  { id: 1, title: "Mega Sale — Up to 50% Off", subtitle: "Grab the biggest discounts of the season!", image: "https://placehold.co/1200x420/F97316/FFFFFF?font=roboto&text=.", buttonText: "Shop Now", link: "/search?q=Snacks" },
-  { id: 2, title: "Free Delivery Above Rs.200", subtitle: "No hidden charges. What you see is what you pay.", image: "https://placehold.co/1200x420/16A34A/FFFFFF?font=roboto&text=.", buttonText: "Order Now", link: "/search?q=Nepali" },
-  { id: 3, title: "Pay via eSewa, Khalti & More", subtitle: "Multiple payment options. Fast & secure checkout.", image: "https://placehold.co/1200x420/7C3AED/FFFFFF?font=roboto&text=.", buttonText: "Explore", link: "/" },
-  { id: 4, title: "Flash Deals Every Day", subtitle: "Limited time offers on your favorite products.", image: "https://placehold.co/1200x420/DC2626/FFFFFF?font=roboto&text=.", buttonText: "Grab Deals", link: "/search?q=Drinks" },
-  { id: 5, title: "Farm Fresh & Organic Picks", subtitle: "Handpicked organic produce from local farms.", image: "https://placehold.co/1200x420/0284C7/FFFFFF?font=roboto&text=.", buttonText: "Shop Fresh", link: "/search?q=Fruits" },
-]
 
 const SORT_OPTIONS = [
   { value: "featured", label: "Featured" },
@@ -27,9 +18,10 @@ const TAG_OPTIONS = ["Best Seller", "Popular Now", "Healthy", "Organic", "New Ar
 export default function Home() {
   const [selectedCat, setSelectedCat] = useState("All")
   const [page, setPage] = useState(1)
-  const [categories, setCategories] = useState(mockCategories)
-  const [products, setProducts] = useState(mockProducts)
+  const [categories, setCategories] = useState([])
+  const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [banners, setBanners] = useState([])
   const [slide, setSlide] = useState(0)
   const [sortBy, setSortBy] = useState("featured")
   const [sidebarSearch, setSidebarSearch] = useState("")
@@ -38,16 +30,17 @@ export default function Home() {
   const [showMobileFilters, setShowMobileFilters] = useState(false)
   const timerRef = useRef(null)
   const containerRef = useScrollRevealAll()
-  const bannerCount = BANNERS.length
+  const bannerCount = banners.length
 
   const nextSlide = useCallback(() => setSlide(s => (s + 1) % bannerCount), [bannerCount])
   const prevSlide = useCallback(() => setSlide(s => (s - 1 + bannerCount) % bannerCount), [bannerCount])
   const goToSlide = useCallback((i) => setSlide(i), [])
 
   useEffect(() => {
+    if (bannerCount === 0) return
     timerRef.current = setInterval(nextSlide, 4000)
     return () => clearInterval(timerRef.current)
-  }, [nextSlide])
+  }, [nextSlide, bannerCount])
 
   function resetTimer() {
     clearInterval(timerRef.current)
@@ -57,9 +50,12 @@ export default function Home() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [catRes, prodRes] = await Promise.all([getCategoriesAPI(), getProductsAPI()])
-        if (catRes.data?.length) setCategories(catRes.data)
-        if (prodRes.data?.length) setProducts(prodRes.data)
+        const [catRes, prodRes, bannerRes] = await Promise.all([
+          getCategoriesAPI(), getProductsAPI(), getBannersAPI({ active: "true" }),
+        ])
+        setCategories(catRes.data?.data || catRes.data || [])
+        setProducts(prodRes.data?.data || prodRes.data || [])
+        setBanners(bannerRes.data?.data || bannerRes.data || [])
       } catch {}
       finally { setLoading(false) }
     }
@@ -215,12 +211,12 @@ export default function Home() {
     <div ref={containerRef} className="min-h-screen bg-surface">
 
       {/* ===== BANNER SLIDER ===== */}
-      <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12 pt-4 sm:pt-6 animate-fade-in-down">
+      {banners.length > 0 && <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12 pt-4 sm:pt-6 animate-fade-in-down">
         <div className="relative overflow-hidden rounded-xl sm:rounded-2xl group">
           <div className="flex transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]" style={{ transform: `translateX(-${slide * 100}%)` }}>
-            {BANNERS.map(b => (
-              <div key={b.id} className="w-full shrink-0 relative">
-                <img src={b.image} alt="" className="w-full h-[200px] sm:h-[300px] md:h-[380px] lg:h-[440px] object-cover" />
+            {banners.map(b => (
+              <div key={b._id || b.id} className="w-full shrink-0 relative">
+                <img src={b.image || "https://placehold.co/1200x420/1a3b1e/FFFFFF?text=VintunaStore"} alt="" className="w-full h-[200px] sm:h-[300px] md:h-[380px] lg:h-[440px] object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
                 <div className="absolute inset-0 flex items-center px-6 sm:px-10 md:px-14 lg:px-20">
                   <div className="max-w-lg">
@@ -239,13 +235,13 @@ export default function Home() {
             <span className="material-symbols-outlined text-primary">chevron_right</span>
           </button>
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-            {BANNERS.map((_, i) => (
+            {banners.map((_, i) => (
               <button key={i} onClick={() => { goToSlide(i); resetTimer() }}
                 className={`rounded-full cursor-pointer transition-all duration-300 ${i === slide ? "w-8 h-2 bg-surface shadow-md" : "w-2 h-2 bg-surface/50 hover:bg-surface/80"}`} />
             ))}
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* ===== HEADER SECTION (Breadcrumb + Title) ===== */}
       <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12 pt-12 sm:pt-16">

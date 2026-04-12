@@ -12,13 +12,19 @@ const TAG_STYLES = {
 
 export default function ProductCard({ product }) {
   const { addToCart, increaseQty, decreaseQty, getItemQty } = useCart()
-  const qty = getItemQty(product.id)
+  const pid = product._id || product.id
+  const qty = getItemQty(pid)
 
   const discount = product.originalPrice > product.price
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0
 
   const tags = Array.isArray(product.tags) ? product.tags : []
+  const imgSrc = Array.isArray(product.image) ? product.image[0] : product.image
+
+  function handleAdd() {
+    addToCart({ ...product, id: pid, image: imgSrc })
+  }
 
   return (
     <div className="group cursor-pointer bg-white/60 dark:bg-white/[0.04] backdrop-blur-3xl rounded-lg border border-black/[0.07] dark:border-white/[0.08] shadow-[0_2px_6px_rgba(0,0,0,0.1),0_6px_20px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.15),0_12px_36px_rgba(0,0,0,0.12)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.04)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-all duration-500 overflow-hidden">
@@ -46,9 +52,9 @@ export default function ProductCard({ product }) {
           </div>
         )}
 
-        <Link to={`/product/${product.id}`}>
+        <Link to={`/product/${pid}`}>
           <img
-            src={product.image}
+            src={imgSrc || "https://placehold.co/400x400/e9e8e6/1a1c1b?text=No+Image"}
             alt={product.name}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
           />
@@ -56,7 +62,7 @@ export default function ProductCard({ product }) {
 
         {product.inStock !== false && qty === 0 && (
           <button
-            onClick={() => addToCart(product)}
+            onClick={handleAdd}
             className="absolute bottom-1.5 right-1.5 bg-white/80 dark:bg-white/[0.1] backdrop-blur-2xl p-1.5 rounded-full opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 cursor-pointer active:scale-90 shadow-[0_2px_8px_rgba(0,0,0,0.15)] z-10"
           >
             <span className="material-symbols-outlined text-primary text-[14px]">add_shopping_cart</span>
@@ -65,18 +71,18 @@ export default function ProductCard({ product }) {
 
         {qty > 0 && (
           <div className="absolute bottom-1.5 right-1.5 flex items-center bg-primary-container/90 backdrop-blur-xl rounded-full px-0.5 py-px shadow-[0_2px_8px_rgba(0,0,0,0.18)] z-10 animate-scale-in">
-            <button onClick={() => decreaseQty(product.id)} className="w-4.5 h-4.5 flex items-center justify-center text-on-primary-container hover:bg-white/20 rounded-full font-bold text-[9px] cursor-pointer transition-colors">
+            <button onClick={() => decreaseQty(pid)} className="w-4.5 h-4.5 flex items-center justify-center text-on-primary-container hover:bg-white/20 rounded-full font-bold text-[9px] cursor-pointer transition-colors">
               {qty === 1 ? <span className="material-symbols-outlined text-[11px]">delete</span> : "−"}
             </button>
             <span className="w-3.5 text-center font-bold text-on-primary-container text-[9px] font-headline">{qty}</span>
-            <button onClick={() => increaseQty(product.id)} className="w-4.5 h-4.5 flex items-center justify-center text-on-primary-container hover:bg-white/20 rounded-full font-bold text-[9px] cursor-pointer transition-colors">+</button>
+            <button onClick={() => increaseQty(pid)} className="w-4.5 h-4.5 flex items-center justify-center text-on-primary-container hover:bg-white/20 rounded-full font-bold text-[9px] cursor-pointer transition-colors">+</button>
           </div>
         )}
       </div>
 
       {/* Info */}
       <div className="px-2 py-1.5 space-y-px">
-        <Link to={`/product/${product.id}`}>
+        <Link to={`/product/${pid}`}>
           <h3 className="font-headline font-bold text-[10px] sm:text-[11px] text-on-surface leading-tight hover:text-secondary transition-colors line-clamp-1">
             {product.name}
           </h3>
@@ -88,10 +94,6 @@ export default function ProductCard({ product }) {
             {discount > 0 && (
               <span className="text-on-surface/25 line-through text-[8px]">Rs.{product.originalPrice}</span>
             )}
-          </div>
-          <div className="flex items-center text-secondary gap-px">
-            <span className="material-symbols-outlined text-[9px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-            <span className="text-[7px] font-bold">4.8</span>
           </div>
         </div>
       </div>
