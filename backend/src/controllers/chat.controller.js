@@ -49,7 +49,7 @@ const sendMessage = asyncHandler(async (req, res) => {
             ],
         })
             .select("name price originalPrice category description inStock tags deliveryTime")
-            .limit(15)
+            .limit(8)
             .lean();
     }
 
@@ -57,7 +57,7 @@ const sendMessage = asyncHandler(async (req, res) => {
         matchedProducts = await Product.find({ inStock: true })
             .select("name price category description tags")
             .sort({ createdAt: -1 })
-            .limit(10)
+            .limit(5)
             .lean();
     }
 
@@ -78,22 +78,10 @@ const sendMessage = asyncHandler(async (req, res) => {
         .join("\n");
 
     // ── STEP 4: Build the system prompt ──
-    const systemPrompt = `You are VintunaStore's friendly shopping assistant. VintunaStore is a grocery store in Kathmandu, Nepal.
+    const systemPrompt = `You are VintunaStore assistant, a grocery store in Kathmandu, Nepal. Be short and helpful. Only recommend products listed below. Prices are in Rs. Delivery free above Rs.200, Cash on Delivery only.
 
-RULES:
-- Be helpful, friendly, concise (2-3 sentences max unless listing products)
-- Only recommend products from the data below — NEVER make up products
-- Show prices in Rs. (Nepali Rupees)
-- If a product is out of stock, mention it
-- If asked about something not in the store, say we don't have it yet
-- Delivery is in Kathmandu, free above Rs.200, payment is Cash on Delivery only
-- Keep responses short and natural
-- Do NOT include any thinking tags or internal reasoning in your response
-
-OUR CATEGORIES: ${categoryNames || "Various grocery items"}
-
-MATCHING PRODUCTS:
-${productContext || "No specific matches found."}`;
+Products: ${productContext || "none found"}
+Categories: ${categoryNames || "various"}`;
 
     // ── STEP 5: Build conversation messages for Ollama ──
     const messages = [
@@ -109,7 +97,7 @@ ${productContext || "No specific matches found."}`;
     let reply = "";
     try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
+        const timeout = setTimeout(() => controller.abort(), 180000); // 3 min timeout
 
         const ollamaRes = await fetch(OLLAMA_URL, {
             method: "POST",
@@ -118,6 +106,9 @@ ${productContext || "No specific matches found."}`;
                 model: MODEL,
                 messages,
                 stream: false,
+                options: {
+                    num_predict: 256,  // limit response length for speed
+                },
             }),
             signal: controller.signal,
         });
@@ -129,10 +120,10 @@ ${productContext || "No specific matches found."}`;
         }
 
         const data = await ollamaRes.json();
-        reply = data.message?.content || "";
+        const rawContent = data.message?.content || "";
 
         // Clean up DeepSeek's thinking tags if present
-        reply = reply.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+        reply = rawContent.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
 
         if (!reply) {
             reply = "Sorry, I couldn't generate a response. Please try again!";
@@ -141,7 +132,7 @@ ${productContext || "No specific matches found."}`;
         if (err.name === "AbortError") {
             throw new apiError(504, "AI took too long to respond. Try a shorter question.");
         }
-        throw new apiError(503, "AI service is not available. Make sure Ollama is running (ollama serve).");
+        throw new apiError(503, `AI service error: ${err.message}. Make sure Ollama is running (ollama serve).`);
     }
 
     // ── STEP 7: Return response ──
