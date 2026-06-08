@@ -4,9 +4,8 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { apiError } from "../utils/apiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
 
-// ──────────────────────────────────────────────
-// HOW THIS WORKS:
-//
+
+
 // 1. Customer sends a message like "show me spices under Rs.200"
 // 2. We search MongoDB for products matching keywords
 // 3. We fetch all category names
@@ -16,8 +15,7 @@ import { apiResponse } from "../utils/apiResponse.js";
 // 7. We return the response to frontend
 //
 // Ollama runs at http://localhost:11434 — no API key needed,
-// completely free, unlimited, runs on your machine.
-// ──────────────────────────────────────────────
+
 
 const OLLAMA_URL = "http://localhost:11434/api/chat";
 const MODEL = "llama3.1:8b";
@@ -29,7 +27,7 @@ const sendMessage = asyncHandler(async (req, res) => {
         throw new apiError(400, "Message is required");
     }
 
-    // ── STEP 1: Search products related to the customer's message ──
+    // Search products related to the customer's message 
     const searchWords = message
         .toLowerCase()
         .replace(/[^a-zA-Z0-9\s]/g, "")
@@ -77,13 +75,13 @@ const sendMessage = asyncHandler(async (req, res) => {
         })
         .join("\n");
 
-    // ── STEP 4: Build the system prompt ──
+    // Build the system prompt 
     const systemPrompt = `You are VintunaStore assistant, a grocery store in Kathmandu, Nepal. Be short and helpful. Only recommend products listed below. Prices are in Rs. Delivery free above Rs.200, Cash on Delivery only.
 
 Products: ${productContext || "none found"}
 Categories: ${categoryNames || "various"}`;
 
-    // ── STEP 5: Build conversation messages for Ollama ──
+    //  Build conversation messages for Ollama 
     const messages = [
         { role: "system", content: systemPrompt },
         ...history.map(msg => ({
@@ -93,7 +91,7 @@ Categories: ${categoryNames || "various"}`;
         { role: "user", content: message },
     ];
 
-    // ── STEP 6: Call Ollama (DeepSeek R1 locally) ──
+    // ─ Call Ollama (DeepSeek R1 locally) 
     let reply = "";
     try {
         const controller = new AbortController();
@@ -135,7 +133,7 @@ Categories: ${categoryNames || "various"}`;
         throw new apiError(503, `AI service error: ${err.message}. Make sure Ollama is running (ollama serve).`);
     }
 
-    // ── STEP 7: Return response ──
+    //  Return response 
     return res.status(200).json(
         new apiResponse(200, {
             reply,
