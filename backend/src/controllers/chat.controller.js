@@ -17,8 +17,8 @@ import { apiResponse } from "../utils/apiResponse.js";
 // Ollama runs at http://localhost:11434 — no API key needed,
 
 
-const OLLAMA_URL = "http://localhost:11434/api/chat";
-const MODEL = "llama3.1:8b";
+const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434/api/chat";
+const MODEL = process.env.OLLAMA_MODEL || "llama3.1:8b";
 
 const sendMessage = asyncHandler(async (req, res) => {
     const { message, history = [] } = req.body;
@@ -77,6 +77,7 @@ const sendMessage = asyncHandler(async (req, res) => {
 
     // Build the system prompt 
     const systemPrompt = `You are VintunaStore assistant, a grocery store in Kathmandu, Nepal. Be short and helpful. Only recommend products listed below. Prices are in Rs. Delivery free above Rs.200, Cash on Delivery only.
+    
 
 Products: ${productContext || "none found"}
 Categories: ${categoryNames || "various"}`;
@@ -91,7 +92,7 @@ Categories: ${categoryNames || "various"}`;
         { role: "user", content: message },
     ];
 
-    // ─ Call Ollama (DeepSeek R1 locally) 
+    // ─ Call Ollama locally ! 
     let reply = "";
     try {
         const controller = new AbortController();

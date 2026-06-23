@@ -8,6 +8,8 @@ export default function Login() {
   const navigate = useNavigate()
   const location = useLocation()
   const successMessage = location.state?.message
+  // where to send the user after login (set by RequireAuth), defaults to home
+  const from = location.state?.from?.pathname || "/"
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -15,7 +17,7 @@ export default function Login() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
-  if (user) return <Navigate to="/" replace />
+  if (user) return <Navigate to={from} replace />
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -26,7 +28,7 @@ export default function Login() {
       const res = await loginAPI(email, password)
       localStorage.setItem("vintuna-token", res.data.accessToken)
       setUser(res.data.user)
-      navigate("/")
+      navigate(from, { replace: true })
     } catch (err) {
       setError(err.message || "Login failed. Check your credentials.")
     } finally { setLoading(false) }

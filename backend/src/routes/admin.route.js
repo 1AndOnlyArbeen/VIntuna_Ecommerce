@@ -8,8 +8,8 @@ const adminRouter = Router();
 
 adminRouter.use(verifyJWT, verifyAdmin);
 
-adminRouter.get("/stats", getDashboardStats);
-adminRouter.get("/orders", getAllOrders);
-adminRouter.put("/orders/:id/status", updateOrderStatus);
+adminRouter.get("/stats",verifyAdmin, getDashboardStats);
+adminRouter.get("/orders",verifyAdmin, getAllOrders);
+adminRouter.put("/orders/:id/status",verifyAdmin, updateOrderStatus);
 
 export { adminRouter };

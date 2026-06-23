@@ -8,6 +8,8 @@ import UserContextProvider from "./context/UserContextProvider"
 // layouts
 import Layout from "./components/Layout"
 import AdminLayout from "./components/Admin/AdminLayout"
+import RequireAdmin from "./components/Admin/RequireAdmin"
+import RequireAuth from "./components/RequireAuth"
 
 // store pages
 import Home from "./components/Home/Home"
@@ -50,27 +52,38 @@ const router = createBrowserRouter([
       { path: "register", element: <Navigate to="/signup" replace /> },
       { path: "forgot-password", element: <ForgotPassword /> },
       { path: "verify-email", element: <VerifyEmail /> },
-      { path: "profile", element: <Profile /> },
       { path: "contact", element: <Contact /> },
-      { path: "orders", element: <Orders /> },
-      { path: "addresses", element: <Addresses /> },
+      // user-only routes (login required)
+      {
+        element: <RequireAuth />,
+        children: [
+          { path: "profile", element: <Profile /> },
+          { path: "orders", element: <Orders /> },
+          { path: "addresses", element: <Addresses /> },
+        ],
+      },
     ],
   },
-  // admin routes
+  // admin routes (guarded: ADMIN role only)
   {
     path: "/admin",
-    element: <AdminLayout />,
+    element: <RequireAdmin />,
     children: [
-      { index: true, element: <AdminDashboard /> },
-      { path: "products", element: <AdminProducts /> },
-      { path: "banners", element: <AdminBanners /> },
-      { path: "featured", element: <AdminFeatured /> },
-      { path: "categories", element: <AdminCategories /> },
-      { path: "orders", element: <AdminOrders /> },
-      { path: "discounts", element: <AdminDiscounts /> },
-      { path: "reviews", element: <AdminReviews /> },
-      { path: "contacts", element: <AdminContacts /> },
-      { path: "profile", element: <AdminProfile /> },
+      {
+        element: <AdminLayout />,
+        children: [
+          { index: true, element: <AdminDashboard /> },
+          { path: "products", element: <AdminProducts /> },
+          { path: "banners", element: <AdminBanners /> },
+          { path: "featured", element: <AdminFeatured /> },
+          { path: "categories", element: <AdminCategories /> },
+          { path: "orders", element: <AdminOrders /> },
+          { path: "discounts", element: <AdminDiscounts /> },
+          { path: "reviews", element: <AdminReviews /> },
+          { path: "contacts", element: <AdminContacts /> },
+          { path: "profile", element: <AdminProfile /> },
+        ],
+      },
     ],
   },
 ])
