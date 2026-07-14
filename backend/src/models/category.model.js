@@ -11,6 +11,10 @@ const categorySchema = new mongoose.Schema({
         type: String,
         default:""
 
+    },
+    notes:{
+        type: String,
+        default:""
     }
 },{timestamps:true})
 

@@ -19,7 +19,7 @@ const PER_PAGE = 8
 
 const emptyForm = {
   name: "", sellingPrice: "", comparePrice: "", category: "",
-  description: "", images: [], unit: "", weight: "", inStock: true, tags: [],
+  description: "", notes: "", images: [], unit: "", weight: "", inStock: true, tags: [],
 }
 
 export default function AdminProducts() {
@@ -89,6 +89,7 @@ export default function AdminProducts() {
       comparePrice: product.originalPrice || "",
       category: product.category,
       description: product.description || "",
+      notes: product.notes || "",
       images: imgArr.map(url => ({ url, preview: url })),
       unit: product.unit || "",
       weight: "",
@@ -155,6 +156,7 @@ export default function AdminProducts() {
     fd.append("originalPrice", form.comparePrice || form.sellingPrice)
     fd.append("category", form.category)
     fd.append("description", form.description)
+    fd.append("notes", form.notes)
     fd.append("unit", form.unit)
     fd.append("inStock", form.inStock)
     fd.append("tags", JSON.stringify(form.tags))
@@ -291,6 +293,15 @@ export default function AdminProducts() {
                     <label className="block text-sm font-semibold text-on-surface/80 mb-1.5">Description</label>
                     <textarea placeholder="Write a short product description..." value={form.description}
                       onChange={e => setForm({ ...form, description: e.target.value })} className={`${inputClass} resize-none`} rows={3} />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-on-surface/80 mb-1.5">
+                      Additional Notes
+                      <span className="ml-1.5 text-xs font-normal text-on-surface/40">(shown to customers, e.g. storage, ingredients, care)</span>
+                    </label>
+                    <textarea placeholder="Any extra info shoppers should know..." value={form.notes}
+                      onChange={e => setForm({ ...form, notes: e.target.value })} className={`${inputClass} resize-none`} rows={3} />
                   </div>
 
                   <label className="flex items-center gap-3 cursor-pointer">

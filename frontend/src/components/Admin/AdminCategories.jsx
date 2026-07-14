@@ -3,7 +3,7 @@ import { getCategoriesAPI, createCategoryAPI, updateCategoryAPI, deleteCategoryA
 import ConfirmModal from "../ConfirmModal"
 
 const PER_PAGE = 10
-const emptyForm = { name: "", images: [] }
+const emptyForm = { name: "", notes: "", images: [] }
 
 export default function AdminCategories() {
   const [cats, setCats] = useState([])
@@ -42,7 +42,7 @@ export default function AdminCategories() {
   function openAdd() { setEditingId(null); setForm(emptyForm); setSaveError(""); setShowModal(true) }
   function openEdit(cat) {
     setEditingId(cat._id)
-    setForm({ name: cat.name, images: cat.image ? [{ url: cat.image, preview: cat.image }] : [] })
+    setForm({ name: cat.name, notes: cat.notes || "", images: cat.image ? [{ url: cat.image, preview: cat.image }] : [] })
     setSaveError(""); setShowModal(true)
   }
   function closeModal() { setShowModal(false); setEditingId(null); setForm(emptyForm); setSaveError(""); if (fileInputRef.current) fileInputRef.current.value = "" }
@@ -63,6 +63,7 @@ export default function AdminCategories() {
     setSaving(true); setSaveError("")
     const fd = new FormData()
     fd.append("name", form.name)
+    fd.append("notes", form.notes)
     const newFile = form.images.find(img => img.file)
     if (newFile) fd.append("image", newFile.file)
     try {
@@ -105,6 +106,13 @@ export default function AdminCategories() {
               <div>
                 <label className="block text-sm font-semibold text-on-surface/80 mb-1.5">Category Name *</label>
                 <input type="text" placeholder="e.g. Fruits & Vegetables" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className={inputClass} required />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-on-surface/80 mb-1.5">
+                  Additional Notes
+                  <span className="ml-1.5 text-xs font-normal text-on-surface/40">(shown to customers)</span>
+                </label>
+                <textarea placeholder="Any extra info about this category..." value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className={`${inputClass} resize-none`} rows={3} />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-on-surface/80 mb-2">Category Image</label>

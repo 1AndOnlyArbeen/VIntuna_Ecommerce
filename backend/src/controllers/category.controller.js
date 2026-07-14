@@ -24,7 +24,7 @@ const getCategoryById = asyncHandler(async (req, res) => {
 });
 
 const createCategory = asyncHandler(async (req, res) => {
-    const { name } = req.body;
+    const { name, notes } = req.body;
     if (!name) throw new apiError(400, "Category name is required");
 
     let imageUrl = "";
@@ -33,7 +33,7 @@ const createCategory = asyncHandler(async (req, res) => {
         if (result) imageUrl = result.secure_url;
     }
 
-    const category = await Category.create({ name, image: imageUrl });
+    const category = await Category.create({ name, image: imageUrl, notes: notes || "" });
     return res.status(201).json(new apiResponse(201, category, "Category created"));
 });
 
@@ -48,7 +48,11 @@ const updateCategory = asyncHandler(async (req, res) => {
     }
 
     const updated = await Category.findByIdAndUpdate(req.params.id,
-        { name: req.body.name || category.name, image: imageUrl },
+        {
+            name: req.body.name || category.name,
+            image: imageUrl,
+            notes: req.body.notes !== undefined ? req.body.notes : category.notes,
+        },
         { new: true }
     );
     return res.status(200).json(new apiResponse(200, updated, "Category updated"));

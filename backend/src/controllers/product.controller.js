@@ -53,7 +53,7 @@ const searchProducts = asyncHandler(async (req, res) => {
 });
 
 const createProduct = asyncHandler(async (req, res) => {
-    const { name, category, price, originalPrice, description, unit, stock, tags, inStock, deliveryTime } = req.body;
+    const { name, category, price, originalPrice, description, notes, unit, stock, tags, inStock, deliveryTime } = req.body;
     if (!name || !price) throw new apiError(400, "Name and price are required");
 
     let imageUrls = [];
@@ -70,6 +70,7 @@ const createProduct = asyncHandler(async (req, res) => {
         price: Number(price),
         originalPrice: Number(originalPrice || price),
         description: description || "",
+        notes: notes || "",
         unit: unit || "",
         stock: Number(stock || 0),
         tags: tags ? (typeof tags === "string" ? JSON.parse(tags) : tags) : [],
@@ -85,7 +86,7 @@ const updateProduct = asyncHandler(async (req, res) => {
     const product = await Product.findById(req.params.id);
     if (!product) throw new apiError(404, "Product not found");
 
-    const { name, category, price, originalPrice, description, unit, stock, tags, inStock, deliveryTime } = req.body;
+    const { name, category, price, originalPrice, description, notes, unit, stock, tags, inStock, deliveryTime } = req.body;
 
     let imageUrls = product.image || [];
     if (req.files && req.files.length > 0) {
@@ -102,6 +103,7 @@ const updateProduct = asyncHandler(async (req, res) => {
         price: price !== undefined ? Number(price) : product.price,
         originalPrice: originalPrice !== undefined ? Number(originalPrice) : product.originalPrice,
         description: description !== undefined ? description : product.description,
+        notes: notes !== undefined ? notes : product.notes,
         unit: unit !== undefined ? unit : product.unit,
         stock: stock !== undefined ? Number(stock) : product.stock,
         tags: tags ? (typeof tags === "string" ? JSON.parse(tags) : tags) : product.tags,

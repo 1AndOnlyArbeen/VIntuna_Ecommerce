@@ -322,6 +322,15 @@ export default function ProductDetail() {
           {activeTab === "description" && (
             <div className="animate-fade-in">
               <p className="text-sm text-on-surface-variant leading-relaxed font-body">{product.description || "No description available for this product."}</p>
+              {product.notes && (
+                <div className="mt-4 flex items-start gap-2 bg-surface-container-low rounded-xl p-3.5">
+                  <span className="material-symbols-outlined text-primary text-[18px] mt-0.5 shrink-0">sticky_note_2</span>
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-on-surface-variant font-label mb-1">Additional Notes</p>
+                    <p className="text-sm text-on-surface-variant leading-relaxed font-body whitespace-pre-wrap">{product.notes}</p>
+                  </div>
+                </div>
+              )}
               {product.deliveryTime && (
                 <div className="mt-4 flex items-center gap-2 text-sm">
                   <span className="material-symbols-outlined text-primary text-[18px]">local_shipping</span>

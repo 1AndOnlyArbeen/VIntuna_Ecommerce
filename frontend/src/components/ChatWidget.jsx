@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react"
 import { sendChatMessageAPI } from "../api"
+import VinnyAvatar from "./VinnyAvatar"
 
 // ──────────────────────────────────────────────
 // HOW THIS COMPONENT WORKS:
@@ -132,9 +133,11 @@ export default function ChatWidget() {
           {/* Header */}
           <div className="relative bg-[linear-gradient(135deg,#7f5700_0%,#a97400_100%)] px-4 py-3.5 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
-              <div className="relative w-10 h-10 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
+              <div className="relative w-10 h-10 flex items-center justify-center">
                 <SwirlRing className="-inset-1.5" />
-                <span className="material-symbols-outlined text-white text-[22px] relative z-10">storefront</span>
+                <div className="w-full h-full rounded-full overflow-hidden relative z-10 ring-2 ring-white/25">
+                  <VinnyAvatar className="w-full h-full" />
+                </div>
                 {/* online dot */}
                 <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full ring-2 ring-[#a97400] z-20" />
               </div>
@@ -169,8 +172,8 @@ export default function ChatWidget() {
             {messages.map((msg, i) => (
               <div key={i} className={`flex items-end gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                 {msg.role === "model" && (
-                  <div className="w-7 h-7 rounded-full bg-[linear-gradient(135deg,#7f5700_0%,#a97400_100%)] flex items-center justify-center shrink-0 mb-0.5">
-                    <span className="material-symbols-outlined text-white text-[15px]">storefront</span>
+                  <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 mb-0.5 ring-1 ring-black/5">
+                    <VinnyAvatar className="w-full h-full" />
                   </div>
                 )}
                 <div className={`max-w-[80%] px-3.5 py-2.5 rounded-2xl text-sm font-label leading-relaxed whitespace-pre-wrap break-words shadow-sm ${
@@ -186,8 +189,8 @@ export default function ChatWidget() {
             {/* Typing indicator */}
             {loading && (
               <div className="flex items-end gap-2 justify-start">
-                <div className="w-7 h-7 rounded-full bg-[linear-gradient(135deg,#7f5700_0%,#a97400_100%)] flex items-center justify-center shrink-0 mb-0.5">
-                  <span className="material-symbols-outlined text-white text-[15px]">storefront</span>
+                <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 mb-0.5 ring-1 ring-black/5">
+                  <VinnyAvatar className="w-full h-full" />
                 </div>
                 <div className="bg-surface-container-high px-4 py-3 rounded-2xl rounded-bl-md flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 bg-on-surface/40 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
@@ -262,9 +265,13 @@ export default function ChatWidget() {
             <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 rounded-full ring-2 ring-white" />
           </>
         )}
-        <span className="material-symbols-outlined text-[26px] relative z-10">
-          {open ? "close" : "chat"}
-        </span>
+        {open ? (
+          <span className="material-symbols-outlined text-[26px] relative z-10">close</span>
+        ) : (
+          <span className="absolute inset-0 rounded-full overflow-hidden z-10">
+            <VinnyAvatar className="w-full h-full" />
+          </span>
+        )}
       </button>
     </>
   )
