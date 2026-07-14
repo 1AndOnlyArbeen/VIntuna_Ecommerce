@@ -262,7 +262,7 @@ export default function ChatWidget() {
         {!open && unread && (
           <>
             <span className="absolute inset-0 rounded-full bg-[#a97400] animate-ping opacity-60" />
-            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 rounded-full ring-2 ring-white" />
+            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-red-500 rounded-full ring-2 ring-white z-20" />
           </>
         )}
         {open ? (
