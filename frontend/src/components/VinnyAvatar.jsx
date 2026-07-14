@@ -1,4 +1,4 @@
-import vinnyImg from "../assets/vinny-avatar.png"
+import vinnyImg from "../assets/vinny-namaste.png"
 
 // Vinny — the VintunaStore assistant: a boy in a Nepali Dhaka topi (ढाका टोपी)
 // doing namaste 🙏. Rendered from a pre-cropped, circle-masked PNG asset so it
@@ -9,7 +9,10 @@ export default function VinnyAvatar({ className = "" }) {
       src={vinnyImg}
       alt="Vinny doing namaste"
       draggable={false}
-      className={`object-cover select-none ${className}`}
+      className={`block select-none ${className}`}
+      // inline styles win over any global img reset (e.g. Tailwind Preflight's
+      // `height:auto`), so the avatar always fills its round container fully.
+      style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }}
     />
   )
 }

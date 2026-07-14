@@ -27,7 +27,12 @@ const STOPWORDS = new Set([
     "how", "much", "many", "about", "this", "that", "these", "those", "near",
     "under", "below", "above", "over", "between", "than", "less", "more", "cheap",
     "cheapest", "best", "good", "store", "shop", "buy", "order", "today", "now",
-    "rupees", "rupee", "price", "prices", "cost", "rs", "nrs",
+    "rupees", "rupee", "price", "prices", "cost", "rs", "nrs", "nprs", "npr",
+    // negations & filler that carry no product signal
+    "not", "dont", "don", "them", "those", "there", "here", "available", "availability",
+    // generic "goods/items" words (and a common typo) — never real product names
+    "goods", "good", "godds", "item", "items", "product", "products", "thing", "things",
+    "stuff", "something", "anything", "everything", "options", "option",
 ]);
 
 // ── Parse the customer's message into a structured search intent ──
@@ -127,16 +132,25 @@ const sendMessage = asyncHandler(async (req, res) => {
     }
 
     // ── STEP 1b: Fallbacks when nothing matched ──
+    // CRITICAL: if the customer gave a budget, the fallback MUST honour it —
+    // otherwise we surface over-budget items (e.g. an Rs.200 item for an
+    // "under Rs.100" query) and the model dutifully recommends them.
     if (matchedProducts.length === 0) {
-        const fallbackQuery = wantsDeals
-            ? { inStock: true, $expr: { $gt: ["$originalPrice", "$price"] } } // items on offer
-            : { inStock: true };
+        const fallbackQuery = { inStock: true };
+        if (hasPrice) fallbackQuery.price = priceFilter;
+        if (wantsDeals) fallbackQuery.$expr = { $gt: ["$originalPrice", "$price"] };
+
         matchedProducts = await Product.find(fallbackQuery)
             .select(baseSelect)
-            .sort({ createdAt: -1 })
+            .sort(hasPrice ? { price: 1 } : { createdAt: -1 }) // cheapest first when budgeting
             .limit(6)
             .lean();
     }
+
+    // Final safety net: never let an over-budget item reach the model's context.
+    // (Guards against any edge case in ranking/keyword matching above.)
+    if (maxPrice != null) matchedProducts = matchedProducts.filter(p => p.price <= maxPrice);
+    if (minPrice != null) matchedProducts = matchedProducts.filter(p => p.price >= minPrice);
 
     // ── STEP 2: Store-wide context (categories) ──
     const categories = await Category.find().select("name").lean();
@@ -161,10 +175,10 @@ const sendMessage = asyncHandler(async (req, res) => {
 
     // Surface the parsed intent to the model so it answers the *actual* ask.
     const intentNote = [
-        maxPrice != null ? `budget ceiling Rs.${maxPrice}` : null,
+        maxPrice != null ? `HARD budget ceiling Rs.${maxPrice} — every item you mention must be Rs.${maxPrice} or LESS` : null,
         minPrice != null ? `budget floor Rs.${minPrice}` : null,
         wantsDeals ? "wants deals/discounts" : null,
-    ].filter(Boolean).join(", ");
+    ].filter(Boolean).join("; ");
 
     // ── STEP 4: Build the system prompt ──
     const systemPrompt = `You are "Vintuna Smart Ai ", the AI shopping assistant for VintunaStore — an online grocery store based in Kathmandu, Nepal.
@@ -179,12 +193,13 @@ Help customers discover products, compare options, check prices and availability
 - Service area: Kathmandu valley.
 
 ## GROUNDING RULES (critical — never break these)
-1. ONLY recommend or discuss products from the "AVAILABLE PRODUCTS" list below. Never invent products, prices, brands, weights, or discounts.
-2. Always quote the EXACT price shown. Never round, estimate, or make up a number. Verify every total by adding the listed prices.
-3. Respect the customer's budget. If they set a price limit, only suggest items within it. If nothing fits, say so honestly and show the closest cheaper option.
-4. If an item is OUT OF STOCK, say so clearly and offer an in-stock alternative.
+1. ONLY recommend or discuss products from the "AVAILABLE PRODUCTS" list below. Never invent products, prices, brands, weights, or discounts. The list has ALREADY been filtered to match the customer's request (including their budget) — trust it completely.
+2. Always quote the EXACT price shown. Never round, estimate, or make up a number. Verify every total by adding the listed prices. When you state a discount, the "now" price MUST equal the listed price (never say "33% off, now Rs.200" if the listed price is Rs.200 — that is wrong).
+3. Respect the customer's budget ABSOLUTELY. If they said "under Rs.X", every item you mention MUST be priced at or below Rs.X. NEVER present an item priced above their limit as if it fits — not even as a suggestion. If the list is empty, tell them nothing is available in that range right now; do not offer a more expensive item unless you clearly label it as over their budget and they might still want it.
+4. If an item is OUT OF STOCK, say so clearly and offer an in-stock alternative. Never recommend an out-of-stock item as the answer.
 5. If the customer asks for something not in the list, say it doesn't appear available right now and suggest the closest match from the list (if any). Do not pretend.
-6. If no products are listed below, ask one short clarifying question — do not guess.
+6. If no products are listed below, say you don't have a match for that right now and ask one short clarifying question — do not guess and do not pull items from earlier in the conversation.
+7. AVAILABILITY QUESTIONS ("is that in your store?", "are those available?"): answer ONLY from the AVAILABLE PRODUCTS list below. An item is available only if it appears here with "In stock". If a previously mentioned item is NOT in the list below, do not assert it is out of stock — say you'll re-check it, since your view refreshes each message. Never contradict a price or stock status you gave earlier unless the list below shows different data.
 
 ## HOW TO THINK (reason before you answer)
 - Identify what the customer actually wants: a specific item, a category, a budget basket, a comparison, delivery info, or just a chat.
@@ -244,7 +259,7 @@ ${categoryNames || "various grocery categories"}`;
                 stream: false,
                 keep_alive: "10m",       // keep the model warm between requests for speed
                 options: {
-                    temperature: 0.4,    // low → factual, grounded, less hallucination
+                    temperature: 0.3,    // low → factual, grounded, less hallucination
                     top_p: 0.9,
                     repeat_penalty: 1.15, // discourage repetitive phrasing
                     num_ctx: 4096,        // wide enough context window for the product list
