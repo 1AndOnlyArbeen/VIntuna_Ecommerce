@@ -152,9 +152,25 @@ const sendMessage = asyncHandler(async (req, res) => {
     if (maxPrice != null) matchedProducts = matchedProducts.filter(p => p.price <= maxPrice);
     if (minPrice != null) matchedProducts = matchedProducts.filter(p => p.price >= minPrice);
 
-    // ── STEP 2: Store-wide context (categories) ──
+    // ── STEP 2: Store-wide context (categories + COMPLETE inventory) ──
     const categories = await Category.find().select("name").lean();
     const categoryNames = categories.map(c => c.name).join(", ");
+
+    // The ENTIRE catalog. This store is small, so listing every product tells the
+    // model the universe is fixed and tiny — the single biggest deterrent against
+    // it inventing plausible-but-fake products (the reported bug).
+    const allProducts = await Product.find().select("name price originalPrice inStock").lean();
+    const inventoryList = allProducts
+        .map(p => {
+            let l = `• ${p.name.trim()} — Rs.${p.price}`;
+            if (p.originalPrice > p.price) l += ` (was Rs.${p.originalPrice})`;
+            if (p.inStock === false) l += " [OUT OF STOCK]";
+            return l;
+        })
+        .join("\n");
+    // Normalised set of real product names, used to catch hallucinated products
+    // in the model's reply before it ever reaches the customer.
+    const realNames = allProducts.map(p => p.name.trim().toLowerCase());
 
     // ── STEP 3: Format product data as grounded context ──
     const productContext = matchedProducts
@@ -227,8 +243,15 @@ Help customers discover products, compare options, check prices and availability
 ## DETECTED CUSTOMER INTENT
 ${intentNote || "general product question"}
 
-## AVAILABLE PRODUCTS (ranked by relevance — use these and only these)
-${productContext || "No matching products were found for this query."}
+## ⛔ COMPLETE STORE INVENTORY — THE ONLY PRODUCTS THAT EXIST
+This is the ENTIRE catalog of VintunaStore. There are NO other products. If a product is not on this exact list, it DOES NOT EXIST in this store and you must NEVER mention, recommend, or price it — no matter how common it is in Nepal (no rice, poha, tea, oil, etc. unless it is literally listed here).
+${inventoryList || "The store currently has no products listed."}
+
+You may ONLY use these exact product names: ${realNames.length ? allProducts.map(p => `"${p.name.trim()}"`).join(", ") : "(none)"}.
+If the customer's request cannot be met with the products above, say so plainly and honestly — do NOT fill the gap with made-up products.
+
+## BEST MATCHES FOR THIS QUERY (a subset of the inventory above, already filtered to the request)
+${productContext || "None of the store's products match this request."}
 
 ## STORE CATEGORIES
 ${categoryNames || "various grocery categories"}`;
@@ -259,7 +282,7 @@ ${categoryNames || "various grocery categories"}`;
                 stream: false,
                 keep_alive: "10m",       // keep the model warm between requests for speed
                 options: {
-                    temperature: 0.3,    // low → factual, grounded, less hallucination
+                    temperature: 0.2,    // low → factual, grounded, less hallucination
                     top_p: 0.9,
                     repeat_penalty: 1.15, // discourage repetitive phrasing
                     num_ctx: 4096,        // wide enough context window for the product list
@@ -289,6 +312,55 @@ ${categoryNames || "various grocery categories"}`;
             throw new apiError(504, "AI took too long to respond. Try a shorter question.");
         }
         throw new apiError(503, `AI service error: ${err.message}. Make sure Ollama is running (ollama serve).`);
+    }
+
+    // ── STEP 6b: Hallucination guard (last line of defence) ──
+    // Even with a strict prompt, a small model can invent products. Verify every
+    // product name and price the reply cites against REAL data; if anything is
+    // fabricated, replace the whole reply with a safe, grounded answer.
+    let grounded = true;
+
+    // Allowed prices = each product's price + original price, the Rs.200 delivery
+    // threshold, and any basket subtotal (all subset-sums of real prices).
+    const allowedPrices = new Set([200]);
+    const priceUniverse = allProducts.map(p => p.price);
+    allProducts.forEach(p => { allowedPrices.add(p.price); if (p.originalPrice) allowedPrices.add(p.originalPrice); });
+    if (priceUniverse.length <= 18) {
+        let sums = new Set([0]);
+        for (const pr of priceUniverse) {
+            const next = new Set(sums);
+            for (const s of sums) next.add(s + pr);
+            sums = next;
+        }
+        sums.forEach(s => allowedPrices.add(s));
+    }
+    const citedPrices = [...reply.matchAll(/rs\.?\s*(\d+)/gi)].map(m => +m[1]);
+    if (citedPrices.some(v => !allowedPrices.has(v))) grounded = false;
+
+    // Any product presented as "Name ... Rs.X" whose name isn't a real product.
+    const mentions = [...reply.matchAll(/\*\*([^*\n]{2,40}?)\*\*[^\n]{0,8}rs\.?\s*\d/gi)].map(m => m[1]);
+    const nameInvented = mentions.some(raw => {
+        const clean = raw.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+        return clean.length >= 3 && !realNames.some(rn => rn.includes(clean) || clean.includes(rn));
+    });
+    if (nameInvented) grounded = false;
+
+    if (!grounded) {
+        const inStock = allProducts.filter(p => p.inStock !== false);
+        if (matchedProducts.length > 0) {
+            const lines = matchedProducts.slice(0, 5).map(p => {
+                let l = `• ${p.name.trim()} — Rs.${p.price}`;
+                if (p.originalPrice > p.price) l += ` (on offer, was Rs.${p.originalPrice})`;
+                return l;
+            });
+            reply = `Here's what we have for that:\n${lines.join("\n")}\n\nWould you like any of these? 😊`;
+        } else if (inStock.length > 0) {
+            reply = `I don't have a match for that right now. Here's everything currently in our store:\n`
+                + inStock.map(p => `• ${p.name.trim()} — Rs.${p.price}`).join("\n")
+                + `\n\nWhat would you like?`;
+        } else {
+            reply = "We don't have any products listed in the store right now. Please check back soon! 😊";
+        }
     }
 
     // ── STEP 7: Return response ──
