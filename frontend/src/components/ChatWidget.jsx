@@ -236,7 +236,7 @@ export default function ChatWidget() {
               </button>
             </div>
             <p className="text-center text-[10px] text-on-surface/35 font-label mt-2">
-              Powered by VintunaStore AI
+              Powered by Arbeen Shrestha || Software Developer
             </p>
           </form>
         </div>

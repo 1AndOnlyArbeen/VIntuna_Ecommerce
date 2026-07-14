@@ -2,6 +2,7 @@ import { NavLink, Outlet, Link } from "react-router-dom"
 import { useContext, useState, useRef, useEffect } from "react"
 import UserContext from "../../context/UserContext"
 import DarkToggle from "../DarkToggle"
+import ChatWidget from "../ChatWidget"
 import logo from "../../assets/logo.png"
 
 const navItems = [
@@ -146,6 +147,9 @@ export default function AdminLayout() {
           </div>
         </main>
       </div>
+
+      {/* Vinny AI assistant — same bot as the storefront */}
+      <ChatWidget />
     </div>
   )
 }
