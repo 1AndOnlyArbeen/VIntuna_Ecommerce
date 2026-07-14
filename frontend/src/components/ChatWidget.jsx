@@ -23,6 +23,37 @@ const SUGGESTIONS = [
   "Suggest snacks for tea",
 ]
 
+// Animated green brush-stroke swirl ring (the "bg" from the reference image).
+// Two organic arcs on a green gradient, slowly counter-rotating for a
+// hand-painted, living feel. Sits behind the avatar via absolute positioning.
+function SwirlRing({ className = "" }) {
+  return (
+    <div className={`absolute pointer-events-none ${className}`}>
+      <svg viewBox="0 0 100 100" className="w-full h-full animate-swirl" fill="none">
+        <defs>
+          <linearGradient id="botSwirlGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#1a3b1e" />
+            <stop offset="45%" stopColor="#2e7d32" />
+            <stop offset="100%" stopColor="#8bd18e" />
+          </linearGradient>
+        </defs>
+        {/* thick main brush stroke — an open, tapering ring */}
+        <circle
+          cx="50" cy="50" r="44"
+          stroke="url(#botSwirlGrad)" strokeWidth="6" strokeLinecap="round"
+          strokeDasharray="228 48" transform="rotate(-28 50 50)"
+        />
+        {/* lighter thin trailing stroke overlapping for the brushy look */}
+        <circle
+          cx="50" cy="50" r="44"
+          stroke="#7cc47f" strokeWidth="2.5" strokeLinecap="round"
+          strokeDasharray="118 158" transform="rotate(150 50 50)" opacity="0.85"
+        />
+      </svg>
+    </div>
+  )
+}
+
 export default function ChatWidget() {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState([{ role: "model", text: GREETING }])
@@ -101,10 +132,11 @@ export default function ChatWidget() {
           {/* Header */}
           <div className="relative bg-[linear-gradient(135deg,#7f5700_0%,#a97400_100%)] px-4 py-3.5 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
-              <div className="relative w-10 h-10 bg-white/20 backdrop-blur rounded-full flex items-center justify-center ring-2 ring-white/15">
-                <span className="material-symbols-outlined text-white text-[22px]">storefront</span>
+              <div className="relative w-10 h-10 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
+                <SwirlRing className="-inset-1.5" />
+                <span className="material-symbols-outlined text-white text-[22px] relative z-10">storefront</span>
                 {/* online dot */}
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full ring-2 ring-[#a97400]" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full ring-2 ring-[#a97400] z-20" />
               </div>
               <div>
                 <h3 className="text-white font-headline font-bold text-[15px] leading-tight">Vinny</h3>
@@ -220,6 +252,9 @@ export default function ChatWidget() {
             : "bg-[linear-gradient(135deg,#7f5700_0%,#a97400_100%)] text-white"
         }`}
       >
+        {/* Animated green swirl ring — the bot's signature look */}
+        {!open && <SwirlRing className="-inset-2" />}
+
         {/* Pulse ring when there's an unread reply */}
         {!open && unread && (
           <>

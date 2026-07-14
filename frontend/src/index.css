@@ -213,6 +213,10 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Rotating brush-stroke swirl ring for the chat bot avatar */
+@keyframes swirlSpin { to { transform: rotate(360deg); } }
+@keyframes swirlSpinRev { to { transform: rotate(-360deg); } }
+
 /* === ANIMATION UTILITY CLASSES === */
 
 .animate-fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
@@ -229,6 +233,12 @@ body {
 .animate-hero-text { animation: heroTextReveal 0.8s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .animate-pulse-ring { animation: pulseRing 2s ease-out infinite; }
 .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-swirl { animation: swirlSpin 9s linear infinite; transform-origin: 50% 50%; }
+.animate-swirl-rev { animation: swirlSpinRev 14s linear infinite; transform-origin: 50% 50%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-swirl, .animate-swirl-rev { animation: none; }
+}
 
 /* === STAGGER DELAYS === */
 .stagger-1 { animation-delay: 0.05s; }
